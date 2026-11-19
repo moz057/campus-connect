@@ -65,6 +65,7 @@ export default function App() {
             <Suspense fallback={<Loading />}>
               <Routes>
                 <Route path="/login" element={<Auth />} />
+                <Route path="/auth/callback" element={<Auth />} />
                 <Route path="/register" element={<Auth />} />
                 <Route element={<Layout />}>
                   <Route index element={<Discover />} />

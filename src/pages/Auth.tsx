@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   GraduationCap,
@@ -10,12 +10,36 @@ import {
   Compass,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { Field, ErrorMessage } from "../components/Common";
+import { Field, ErrorMessage, Loading } from "../components/Common";
+import { supabase } from "../lib/supabase";
+
+type AuthLocationState = {
+  from?: string;
+  confirmationError?: string;
+  confirmed?: boolean;
+};
+
+const invalidConfirmation =
+  "This confirmation link could not be verified. Log in if your account is already confirmed, or request a new link.";
 export default function Auth() {
-  const { profile, demo, signIn, signUp, demoLogin } = useAuth();
+  const { profile, demo, signIn, signUp, resendConfirmation, demoLogin } =
+    useAuth();
   const location = useLocation(),
     navigate = useNavigate();
   const signup = location.pathname === "/register";
+  const authState = location.state as AuthLocationState | null;
+  const emailInput = useRef<HTMLInputElement>(null);
+  const query = new URLSearchParams(location.search);
+  const fragment = new URLSearchParams(location.hash.slice(1));
+  const errorCode = fragment.get("error_code") ?? query.get("error_code");
+  const linkError = [fragment, query].some((params) =>
+    ["error", "error_code", "error_description"].some((key) => params.has(key)),
+  );
+  const code = query.get("code");
+  const callback =
+    location.pathname === "/auth/callback" ||
+    (location.pathname === "/login" &&
+      (linkError || Boolean(code) || fragment.has("access_token")));
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [name, setName] = useState(""),
@@ -24,11 +48,68 @@ export default function Auth() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [success, setSuccess] = useState("");
-  const destination =
-    (location.state as { from?: string } | null)?.from || "/events";
+  const destination = authState?.from || "/events";
+  const confirmationError = authState?.confirmationError;
   useEffect(() => {
-    if (profile && !demo) navigate(destination, { replace: true });
-  }, [profile, demo, navigate, destination]);
+    if (!callback) return;
+    let active = true;
+    async function completeConfirmation() {
+      let message = invalidConfirmation;
+      if (errorCode === "otp_expired") {
+        message =
+          "This confirmation link has expired or has already been used. Log in if you already confirmed your account, or request a new link.";
+      } else if (!linkError && supabase) {
+        try {
+          // The SDK consumes URL credentials during initialization.
+          const { error } = await supabase.auth.initialize();
+          const { data, error: sessionError } =
+            await supabase.auth.getSession();
+          const codeStillPresent =
+            code && new URLSearchParams(window.location.search).has("code");
+          if (!error && !sessionError && !codeStillPresent && data.session)
+            message = "";
+        } catch {
+          // A failed callback can be retried from the login screen.
+        }
+      }
+      if (active) {
+        navigate("/login", {
+          replace: true,
+          state: {
+            from: destination,
+            confirmationError: message,
+            confirmed: !message,
+          },
+        });
+      }
+    }
+    void completeConfirmation();
+    return () => {
+      active = false;
+    };
+  }, [callback, code, destination, errorCode, linkError, navigate]);
+  useEffect(() => {
+    if (profile && !demo && !callback && !confirmationError) {
+      navigate(destination, { replace: true });
+    }
+  }, [profile, demo, callback, confirmationError, navigate, destination]);
+
+  async function requestConfirmation() {
+    if (!emailInput.current?.reportValidity()) return;
+    setBusy(true);
+    setError("");
+    setSuccess("");
+    try {
+      await resendConfirmation(email.trim());
+      setSuccess(
+        "If your account is awaiting confirmation, check your inbox for a new link.",
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -50,13 +131,19 @@ export default function Auth() {
           setSuccess(
             "Check your email to confirm your account, then return here to log in.",
           );
-      } else await signIn(email.trim(), password);
+      } else {
+        await signIn(email.trim(), password);
+        if (confirmationError)
+          navigate("/login", { replace: true, state: { from: destination } });
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
     }
   }
+  if (callback) return <Loading />;
+
   return (
     <div className="auth-page">
       <div className="auth-art">
@@ -109,10 +196,10 @@ export default function Auth() {
             </div>
           )}
           <form onSubmit={submit}>
-            <ErrorMessage message={error} />
-            {success && (
+            <ErrorMessage message={error || confirmationError || ""} />
+            {(success || authState?.confirmed) && (
               <div className="success-message" role="status">
-                {success}
+                {success || "Email confirmed. You can now log in."}
               </div>
             )}
             {signup && (
@@ -141,6 +228,7 @@ export default function Auth() {
             )}
             <Field label="University email">
               <input
+                ref={emailInput}
                 type="email"
                 required
                 autoComplete="email"
@@ -176,6 +264,16 @@ export default function Auth() {
               {busy ? "Please wait…" : signup ? "Create account" : "Log in"}
               <ArrowRight size={17} />
             </button>
+            {!signup && !demo && (
+              <button
+                type="button"
+                className="button full-width"
+                disabled={busy}
+                onClick={requestConfirmation}
+              >
+                Resend confirmation email
+              </button>
+            )}
           </form>
           <p className="auth-switch">
             {signup ? "Already a Carolinian here?" : "New to CampusConnect?"}{" "}

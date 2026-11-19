@@ -15,6 +15,7 @@ interface AuthValue {
     full_name: string,
     student_id: string,
   ) => Promise<boolean>;
+  resendConfirmation: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   saveProfile: (p: Partial<Profile>) => Promise<void>;
   demoLogin: (role: Role) => void;
@@ -107,11 +108,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: {
         data: { full_name, student_id },
-        emailRedirectTo: window.location.origin + "/login",
+        emailRedirectTo: window.location.origin + "/auth/callback",
       },
     });
     if (error) throw error;
     return Boolean(data.session);
+  }
+  async function resendConfirmation(email: string) {
+    if (!supabase) throw Error("Connect Supabase to send confirmation emails.");
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: window.location.origin + "/auth/callback" },
+    });
+    if (error) throw error;
   }
   async function signOut() {
     if (supabase) {
@@ -170,6 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         demo: !supabase,
         signIn,
         signUp,
+        resendConfirmation,
         signOut,
         saveProfile,
         demoLogin,

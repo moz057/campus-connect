@@ -9,6 +9,9 @@ import {
 } from "@testing-library/react";
 import App from "./App";
 import { demoEvents } from "./data/demo";
+
+vi.mock("./lib/supabase", () => ({ configured: false, supabase: null }));
+
 beforeEach(() => {
   localStorage.clear();
   window.history.replaceState({}, "", "/events");
@@ -18,6 +21,22 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
+describe("email confirmation redirects", () => {
+  it.each([
+    "/login#error=access_denied&error_code=otp_expired",
+    "/auth/callback#error=access_denied&error_code=otp_expired",
+    "/auth/callback?error=access_denied&error_code=otp_expired",
+  ])("shows recovery guidance and cleans %s", async (url) => {
+    window.history.replaceState({}, "", url);
+    render(<App />);
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "This confirmation link has expired or has already been used.",
+    );
+    expect(window.location.pathname).toBe("/login");
+    expect(window.location.search + window.location.hash).toBe("");
+  });
+});
+
 describe("student workflows in the browser demo", () => {
   it("searches and filters upcoming events", async () => {
     render(<App />);
