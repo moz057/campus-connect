@@ -1417,16 +1417,6 @@ a:focus-visible {
   position: relative;
   overflow: hidden;
 }
-.campus-note:after {
-  content: "✳";
-  position: absolute;
-  font-size: 130px;
-  right: -25px;
-  top: 3px;
-  color: #e7dfc273;
-  z-index: 0;
-  line-height: 1;
-}
 .campus-note > * {
   position: relative;
   z-index: 1;
@@ -2312,13 +2302,12 @@ a:focus-visible {
   color: #acbea1;
 }
 .auth-art-star {
-  font-size: 120px;
-  line-height: 1.5;
+  width: 78px;
+  height: 78px;
   color: #c7c27a;
   position: relative;
   display: block;
   margin-top: 30px;
-  font-weight: 400;
 }
 .auth-art > small {
   font-size: 9px;
@@ -3825,7 +3814,8 @@ tr:hover td {
     font-size: 11px;
   }
   .auth-art-star {
-    font-size: 90px;
+    width: 62px;
+    height: 62px;
   }
   .filter-panel {
     grid-template-columns: 1fr 1fr;
@@ -4371,12 +4361,7 @@ tr:hover td {
     font-size: 5px;
   }
   .auth-art-star {
-    position: absolute;
-    right: 25px;
-    top: 85px;
-    font-size: 90px;
-    margin: 0;
-    color: #c7c27a90;
+    display: none;
   }
   .auth-art > small {
     display: none;

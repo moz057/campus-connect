@@ -8,6 +8,7 @@ import {
   EyeOff,
   ShieldCheck,
   Compass,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Field, ErrorMessage, Loading } from "../components/Common";
@@ -166,16 +167,16 @@ export default function Auth() {
           <h1>
             Your campus.
             <br />
-            Your people.
+            Your people.{" "}
             <br />
             Your next chapter.
           </h1>
           <p>
-            One place for everything that brings
+            One place for everything that brings{" "}
             <br />
             the Carolinian community together.
           </p>
-          <span className="auth-art-star">✳</span>
+          <Sparkles className="auth-art-star" aria-hidden="true" />
         </div>
         <small>Scientia · Virtus · Devotio</small>
       </div>
