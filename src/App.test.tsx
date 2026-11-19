@@ -6,6 +6,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import App from "./App";
 import { demoEvents } from "./data/demo";
@@ -137,10 +138,32 @@ describe("student workflows in the browser demo", () => {
 });
 describe("organizer demo workflow", () => {
   it("lets a student request membership and a student leader approve it", async () => {
-    window.history.replaceState({}, "", "/organizations/cis");
+    window.history.replaceState({}, "", "/organizations");
     render(<App />);
+    const directoryDetails = await screen.findByRole("link", {
+      name: "View details for Computer and Information Sciences Council",
+    });
+    fireEvent.click(directoryDetails);
+    const upcoming = await screen.findByRole("region", {
+      name: "Upcoming events",
+    });
     fireEvent.click(
-      await screen.findByRole("button", { name: "Request to join" }),
+      within(upcoming).getAllByRole("link", {
+        name: /View event details for/,
+      })[0],
+    );
+    const details = await screen.findByRole("region", {
+      name: "Event details",
+    });
+    expect(within(details).getByText("Venue")).toBeTruthy();
+    expect(within(details).getByText("Starts")).toBeTruthy();
+    fireEvent.click(screen.getByRole("link", { name: "Organizations" }));
+    const councilDetails = await screen.findByRole("link", {
+      name: "View details for Computer and Information Sciences Council",
+    });
+    const councilCard = councilDetails.closest("article")!;
+    fireEvent.click(
+      within(councilCard).getByRole("button", { name: "Request to join" }),
     );
     expect(await screen.findByText("Membership request pending")).toBeTruthy();
 
@@ -272,12 +295,9 @@ describe("organizer demo workflow", () => {
     fireEvent.change(screen.getByLabelText("Venue"), {
       target: { value: "Campus garden" },
     });
-    fireEvent.change(
-      screen.getByLabelText(/Registration form link/),
-      {
-        target: { value: url },
-      },
-    );
+    fireEvent.change(screen.getByLabelText(/Registration form link/), {
+      target: { value: url },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Publish event" }));
     expect(
       (

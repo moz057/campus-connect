@@ -146,7 +146,7 @@ Apply [202611190002_event_registration_forms.sql](supabase/migrations/2026111900
 
 Apply [202611190003_organization_join_requests.sql](supabase/migrations/202611190003_organization_join_requests.sql) after the event forms migration and before deploying the matching frontend. Students open an organization and select **Request to join**. Its active leaders can approve or decline the request under **Leadership**, under **Membership requests**. University admins can also review requests in **Manage organizations**. On approval the organization appears on the student's profile. Existing membership rows are preserved; legacy profile text grants no membership.
 
-To populate a presentation project with sample content, run [demo_seed.sql](supabase/demo_seed.sql) after the organization and leadership migration. It adds three sample organizations, six upcoming events, and one announcement. Records are labeled DEMO and identified by fixed IDs. The script can be rerun without duplicating its records and creates no accounts or registrations.
+To populate a presentation project with sample content, run [demo_seed.sql](supabase/demo_seed.sql) after the organization and leadership migration. It adds three sample organizations, six upcoming events, and one announcement. Fixed IDs identify the sample records. Rerunning the script refreshes listings that still have their original DEMO prefix and preserves their dates. The script creates no accounts or registrations.
 
 ## Test the three roles
 

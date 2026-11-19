@@ -109,21 +109,6 @@ export default function EventDetails() {
         <div className="detail-main">
           <span className="eyebrow">{e.organization}</span>
           <h1>{e.title}</h1>
-          <div className="detail-chips">
-            <span>
-              <CalendarDays size={16} />
-              {dateLabel(e.start_time, {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </span>
-            <span>
-              <Clock3 size={16} />
-              {timeLabel(e.start_time)} – {timeLabel(e.end_time)} PHT
-            </span>
-          </div>
           {soon && (
             <div className="soon-banner">
               <Bell size={18} />
@@ -136,33 +121,65 @@ export default function EventDetails() {
               </div>
             </div>
           )}
-          <section className="detail-section">
-            <h2>A little about this event</h2>
+          <section
+            className="detail-section"
+            aria-labelledby="event-details-heading"
+          >
+            <h2 id="event-details-heading">Event details</h2>
+            <dl className="event-facts">
+              <div>
+                <dt>
+                  <CalendarDays size={16} aria-hidden="true" /> Starts
+                </dt>
+                <dd>
+                  <time dateTime={e.start_time}>
+                    {dateLabel(e.start_time, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}{" "}
+                    PHT
+                  </time>
+                </dd>
+              </div>
+              <div>
+                <dt>
+                  <Clock3 size={16} aria-hidden="true" /> Ends
+                </dt>
+                <dd>
+                  <time dateTime={e.end_time}>
+                    {dateLabel(e.end_time, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}{" "}
+                    PHT
+                  </time>
+                </dd>
+              </div>
+              <div>
+                <dt>
+                  <MapPin size={16} aria-hidden="true" /> Venue
+                </dt>
+                <dd>{e.venue}</dd>
+              </div>
+              <div>
+                <dt>
+                  <GraduationCap size={16} aria-hidden="true" /> Hosted by
+                </dt>
+                <dd>
+                  {e.organization_id ? (
+                    <Link
+                      className="text-link"
+                      to={"/organizations/" + e.organization_id}
+                    >
+                      {e.organization}
+                    </Link>
+                  ) : (
+                    e.organization
+                  )}
+                </dd>
+              </div>
+            </dl>
             <p className="preserve-lines">{e.description}</p>
-          </section>
-          <section className="detail-section">
-            <h2>Where we’re meeting</h2>
-            <div className="venue-box">
-              <span className="stat-icon pale-green">
-                <MapPin size={24} />
-              </span>
-              <div>
-                <h3>{e.venue}</h3>
-                <p>University of San Carlos · Cebu, Philippines</p>
-              </div>
-            </div>
-          </section>
-          <section className="detail-section">
-            <h2>Your hosts</h2>
-            <div className="venue-box">
-              <span className="stat-icon pale-gold">
-                <GraduationCap size={24} />
-              </span>
-              <div>
-                <h3>{e.organization}</h3>
-                <p>Part of the Carolinian community</p>
-              </div>
-            </div>
           </section>
           {announcements.filter((a) => a.event_id === id).length > 0 && (
             <section className="detail-section">
@@ -180,12 +197,7 @@ export default function EventDetails() {
         </div>
         <aside>
           <div className="registration-panel panel">
-            <span className="eyebrow">SAVE YOUR SPOT</span>
-            <h2>
-              A campus moment
-              <br />
-              worth showing up for.
-            </h2>
+            <h2>Registration</h2>
             <div className="free-tag">
               Free admission <span>For USC students</span>
             </div>

@@ -797,25 +797,53 @@ it("seeds presentation data without duplicating or replacing existing records", 
     "utf8",
   );
   await db.exec(seed);
+  const sampleId = "de000002-0000-4000-8000-000000000001";
+  await db.exec(`
+    update public.organizations set name='DEMO: Technology Circle'
+      where id='de000001-0000-4000-8000-000000000001';
+    update public.events set title='DEMO: Campus Web Design Lab',description='Original sample description.',venue='Existing venue'
+      where id='de000002-0000-4000-8000-000000000001';
+    update public.announcements set title='DEMO: Welcome to CampusConnect'
+      where id='de000003-0000-4000-8000-000000000001';
+  `);
+  const before = (
+    await db.query(
+      "select start_time,end_time,registration_deadline,venue from public.events where id=$1",
+      [sampleId],
+    )
+  ).rows[0];
   await db.exec(seed);
+  await db.exec(seed);
+  const refreshed = (
+    await db.query(
+      "select title,description,organization,start_time,end_time,registration_deadline,venue from public.events where id=$1",
+      [sampleId],
+    )
+  ).rows[0];
+  expect(refreshed).toMatchObject({
+    ...before,
+    title: "Campus Web Design Lab",
+    organization: "Technology Circle",
+    description: expect.stringContaining("What to bring"),
+  });
   expect(
     (
       await db.query(
-        "select id from public.organizations where name like 'DEMO:%'",
+        "select id from public.organizations where id::text like 'de000001-%' and name not like 'DEMO:%'",
       )
     ).rows,
   ).toHaveLength(3);
   expect(
     (
       await db.query(
-        "select id from public.events where title like 'DEMO:%' and organization_id is not null and registration_deadline > now()",
+        "select id from public.events where id::text like 'de000002-%' and title not like 'DEMO:%' and organization_id is not null and registration_deadline > now()",
       )
     ).rows,
   ).toHaveLength(6);
   expect(
     (
       await db.query(
-        "select id from public.announcements where title like 'DEMO:%'",
+        "select id from public.announcements where id='de000003-0000-4000-8000-000000000001' and title='Welcome to CampusConnect'",
       )
     ).rows,
   ).toHaveLength(1);

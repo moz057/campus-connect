@@ -1,6 +1,13 @@
 ﻿import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { Building2, Plus, RefreshCw } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  CalendarDays,
+  MapPin,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
 import { useOrganizations, campusDate } from "../contexts/OrganizationContext";
 import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -19,7 +26,7 @@ import type {
   Organization,
   StudentSummary,
 } from "../lib/types";
-import { dateLabel } from "../lib/utils";
+import { dateLabel, timeLabel } from "../lib/utils";
 
 function useAction() {
   const notify = useToast();
@@ -60,11 +67,11 @@ function JoinOrganization({ organization }: { organization: Organization }) {
   if (!profile)
     return (
       <Link
-        className="button"
+        className="button primary"
         to="/login"
         state={{ from: "/organizations/" + organization.id }}
       >
-        Sign in to request membership
+        Sign in to join
       </Link>
     );
   if (
@@ -74,7 +81,7 @@ function JoinOrganization({ organization }: { organization: Organization }) {
     )
   )
     return (
-      <div className="workflow-actions">
+      <div className="organization-member">
         <span className="success-badge">Member</span>
         <Link to="/leadership" className="text-link">
           View my memberships
@@ -183,18 +190,20 @@ function MembershipReview() {
 export function OrganizationDirectory() {
   const { id } = useParams();
   const { organizations, loading, error } = useOrganizations();
-  const { events } = useData();
+  const { events, loading: eventsLoading } = useData();
   if (loading) return <Loading />;
   if (error) return <ErrorMessage message={error} />;
   if (id) {
     const organization = organizations.find((org) => org.id === id);
     if (!organization) return <Empty title="Organization not found" />;
-    const upcoming = events.filter(
-      (event) =>
-        event.organization_id === id &&
-        !event.cancelled_at &&
-        Date.parse(event.end_time) > Date.now(),
-    );
+    const upcoming = events
+      .filter(
+        (event) =>
+          event.organization_id === id &&
+          !event.cancelled_at &&
+          Date.parse(event.end_time) > Date.now(),
+      )
+      .sort((a, b) => Date.parse(a.start_time) - Date.parse(b.start_time));
     return (
       <>
         <Link to="/organizations" className="back-link">
@@ -226,16 +235,46 @@ export function OrganizationDirectory() {
           )}
           <JoinOrganization key={organization.id} organization={organization} />
         </section>
-        {upcoming.length > 0 && (
-          <section className="panel organization-card">
-            <h2>Upcoming events</h2>
-            <ul>
-              {upcoming.map((event) => (
-                <li key={event.id}>
-                  <Link to={"/events/" + event.id}>{event.title}</Link>
-                </li>
-              ))}
-            </ul>
+        {!organization.archived_at && (
+          <section
+            className="panel organization-card"
+            aria-labelledby="organization-events"
+          >
+            <h2 id="organization-events">Upcoming events</h2>
+            {eventsLoading ? (
+              <Loading />
+            ) : upcoming.length ? (
+              <div className="organization-event-list">
+                {upcoming.map((event) => (
+                  <article className="organization-event" key={event.id}>
+                    <div>
+                      <h3>{event.title}</h3>
+                      <p>{event.description.trim().split(/\n\s*\n/, 1)[0]}</p>
+                      <div className="organization-event-meta">
+                        <span>
+                          <CalendarDays size={16} aria-hidden="true" />{" "}
+                          {dateLabel(event.start_time)} at{" "}
+                          {timeLabel(event.start_time)} PHT
+                        </span>
+                        <span>
+                          <MapPin size={16} aria-hidden="true" /> {event.venue}
+                        </span>
+                      </div>
+                    </div>
+                    <Link
+                      className="button"
+                      to={"/events/" + event.id}
+                      aria-label={"View event details for " + event.title}
+                    >
+                      View event details{" "}
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p>No upcoming events.</p>
+            )}
           </section>
         )}
       </>
@@ -248,12 +287,15 @@ export function OrganizationDirectory() {
     <>
       <PageTitle
         title="Student organizations"
-        description="Explore recognized University of San Carlos organizations."
+        description="Find an organization, see its upcoming events, or request to join."
       />
       {active.length ? (
         <div className="organization-grid">
           {active.map((organization) => (
-            <article className="panel organization-card" key={organization.id}>
+            <article
+              className="panel organization-card directory-organization-card"
+              key={organization.id}
+            >
               <OrganizationLogo organization={organization} />
               <h2>
                 <Link to={"/organizations/" + organization.id}>
@@ -261,6 +303,16 @@ export function OrganizationDirectory() {
                 </Link>
               </h2>
               {organization.description && <p>{organization.description}</p>}
+              <div className="organization-card-actions">
+                <Link
+                  className="button"
+                  to={"/organizations/" + organization.id}
+                  aria-label={"View details for " + organization.name}
+                >
+                  View details <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+                <JoinOrganization organization={organization} />
+              </div>
             </article>
           ))}
         </div>
