@@ -23,17 +23,26 @@ import {
   LogOut,
   UserRoundPen,
   Users,
-  Code2,
-  HeartHandshake,
+  Building2,
   Sparkles,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useData } from "../contexts/DataContext";
+import { useOrganizations } from "../contexts/OrganizationContext";
 import { useToast } from "../contexts/ToastContext";
 import { initials } from "../lib/utils";
 export default function Layout() {
   const { profile, demo, signOut } = useAuth();
   const { announcements, error, refresh } = useData();
+  const {
+    organizations,
+    leading,
+    organizer,
+    scope,
+    setScope,
+    notifications,
+    announcementReads,
+  } = useOrganizations();
   const notify = useToast();
   const [mobile, setMobile] = useState(false);
   const [query, setQuery] = useState("");
@@ -84,18 +93,21 @@ export default function Layout() {
     { to: "/events", label: "Discover events", icon: Compass },
     { to: "/calendar", label: "Event calendar", icon: CalendarDays },
     { to: "/registrations", label: "My registrations", icon: Ticket },
-    { to: "/notifications", label: "Announcements", icon: Bell },
+    { to: "/notifications", label: "Notifications", icon: Bell },
+    { to: "/organizations", label: "Organizations", icon: Building2 },
   ];
-  const [, setReadRevision] = useState(0);
-  useEffect(() => {
-    const update = () => setReadRevision((n) => n + 1);
-    window.addEventListener("cc-read", update);
-    return () => window.removeEventListener("cc-read", update);
-  }, []);
-  const readIds: string[] = JSON.parse(
-    localStorage.getItem("cc-read-" + (profile?.id || "guest")) || "[]",
+  const readIds = new Set(
+    announcementReads.map((read) => read.announcement_id),
   );
-  const unread = announcements.filter((a) => !readIds.includes(a.id)).length;
+  const unread =
+    notifications.filter((n) => !n.read_at).length +
+    announcements.filter((a) => !readIds.has(a.id)).length;
+  const admin = profile?.role === "admin";
+  const showScope =
+    organizer &&
+    ["/admin", "/admin/attendance", "/admin/reports"].includes(
+      location.pathname,
+    );
   const section = location.pathname.startsWith("/admin")
     ? "Organizer workspace"
     : links.find((l) => location.pathname.startsWith(l.to))?.label ||
@@ -145,49 +157,13 @@ export default function Layout() {
             >
               <Icon size={19} />
               <span>{label}</span>
-              {label === "Announcements" && unread > 0 && (
+              {label === "Notifications" && unread > 0 && (
                 <span className="nav-count">{unread}</span>
               )}
             </NavLink>
           ))}
         </nav>
-        <div className="nav-section-label organization-label">
-          EXPLORE ORGANIZATIONS
-        </div>
-        <Link
-          className="organization-link"
-          to="/events?organization=Computer"
-          onClick={() => setMobile(false)}
-        >
-          <span className="org-icon lilac">
-            <Code2 size={15} />
-          </span>
-          CIS Council
-          <ArrowUpRight size={13} />
-        </Link>
-        <Link
-          className="organization-link"
-          to="/events?organization=Supreme"
-          onClick={() => setMobile(false)}
-        >
-          <span className="org-icon peach">
-            <Users size={15} />
-          </span>
-          Student Council
-          <ArrowUpRight size={13} />
-        </Link>
-        <Link
-          className="organization-link"
-          to="/events?organization=Community"
-          onClick={() => setMobile(false)}
-        >
-          <span className="org-icon mint">
-            <HeartHandshake size={15} />
-          </span>
-          Community Extension
-          <ArrowUpRight size={13} />
-        </Link>
-        {profile?.role === "admin" && (
+        {organizer && (
           <>
             <div className="nav-section-label organization-label">
               ORGANIZER TOOLS
@@ -205,6 +181,15 @@ export default function Layout() {
                   label: "Event reports",
                   icon: ChartNoAxesCombined,
                 },
+                ...(admin
+                  ? [
+                      {
+                        to: "/admin/organizations",
+                        label: "Manage organizations",
+                        icon: Building2,
+                      },
+                    ]
+                  : []),
               ].map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
@@ -222,6 +207,16 @@ export default function Layout() {
             </nav>
           </>
         )}
+        {profile && (
+          <NavLink
+            className="nav-item"
+            to="/leadership"
+            onClick={() => setMobile(false)}
+          >
+            <Users size={19} />
+            Leadership
+          </NavLink>
+        )}
         <div className="sidebar-bottom">
           <div className="organizer-callout">
             <span className="tiny-stars">
@@ -229,11 +224,7 @@ export default function Layout() {
             </span>
             <strong>Bring your ideas to life.</strong>
             <p>Your organization. Your next big event.</p>
-            <Link
-              to={
-                profile?.role === "admin" ? "/admin/events/new" : "/organizers"
-              }
-            >
+            <Link to={organizer ? "/admin/events/new" : "/organizers"}>
               Organize an event <ArrowUpRight size={15} />
             </Link>
           </div>
@@ -321,11 +312,18 @@ export default function Layout() {
               />
               <kbd>↵</kbd>
             </form>
+            {!demo && leading.length > 0 && (
+              <span className="demo-pill">Student Leader</span>
+            )}
             {demo && (
               <Link to="/login" className="demo-pill">
                 Demo{" "}
                 <span>
-                  {profile?.role === "admin" ? "Organizer" : "Student"}
+                  {admin
+                    ? "University Admin"
+                    : leading.length
+                      ? "Student Leader"
+                      : "Student"}
                 </span>
                 <ChevronDown size={12} />
               </Link>
@@ -333,7 +331,7 @@ export default function Layout() {
             <Link
               to="/notifications"
               className="notification-button"
-              aria-label={`${unread} unread announcements`}
+              aria-label={`${unread} unread notifications`}
             >
               <Bell size={20} />
               {unread > 0 && <i />}
@@ -351,6 +349,23 @@ export default function Layout() {
               Could not refresh campus data: {error}
               <button onClick={() => void refresh()}>Try again</button>
             </div>
+          )}
+          {showScope && (
+            <label className="workspace-scope">
+              Organization
+              <select
+                value={scope}
+                onChange={(event) => setScope(event.target.value)}
+              >
+                {admin && <option value="">All campus events</option>}
+                {(admin ? organizations : leading).map((organization) => (
+                  <option key={organization.id} value={organization.id}>
+                    {organization.name}
+                    {organization.archived_at ? " (archived)" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
           )}
           <Outlet />
         </main>

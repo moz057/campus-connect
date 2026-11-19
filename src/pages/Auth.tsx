@@ -308,6 +308,18 @@ export default function Auth() {
               <div className="demo-roles">
                 <button
                   onClick={() => {
+                    demoLogin("leader");
+                    navigate("/admin");
+                  }}
+                >
+                  <ShieldCheck size={21} />
+                  <strong>Student Leader</strong>
+                  <span>
+                    Lead an organization <ArrowRight size={13} />
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
                     demoLogin("student");
                     navigate(destination);
                   }}

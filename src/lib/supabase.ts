@@ -8,3 +8,21 @@ export const configured = Boolean(
 export const supabase = configured
   ? createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY)
   : null;
+
+export async function readPages<T>(
+  page: (
+    from: number,
+    to: number,
+  ) => PromiseLike<{
+    data: unknown[] | null;
+    error: unknown;
+  }>,
+): Promise<T[]> {
+  const rows: T[] = [];
+  for (let offset = 0; ; offset += 500) {
+    const { data, error } = await page(offset, offset + 499);
+    if (error) throw error;
+    rows.push(...((data ?? []) as T[]));
+    if (!data || data.length < 500) return rows;
+  }
+}

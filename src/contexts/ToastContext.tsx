@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 import type { ReactNode } from "react";
 import { CheckCircle2, AlertCircle, X } from "lucide-react";
 const Context = createContext<(message: string, error?: boolean) => void>(
@@ -10,11 +10,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     error: boolean;
     id: number;
   } | null>(null);
-  function notify(message: string, error = false) {
+  const notify = useCallback((message: string, error = false) => {
     const id = Date.now();
     setToast({ message, error, id });
     setTimeout(() => setToast((t) => (t?.id === id ? null : t)), 5500);
-  }
+  }, []);
   return (
     <Context.Provider value={notify}>
       {children}

@@ -18,12 +18,13 @@ export default function Registrations() {
   const { registrations, events, attendance, loading } = useData();
   const [tab, setTab] = useState("upcoming");
   const [selected, setSelected] = useState("");
-  const own = registrations.filter(
-    (r) => r.user_id === profile?.id && r.status !== "cancelled",
-  );
+  const own = registrations.filter((r) => r.user_id === profile?.id);
   const visible = own.filter((r) => {
     const e = events.find((e) => e.id === r.event_id);
     if (!e) return false;
+    const cancelled = Boolean(e.cancelled_at) || r.status === "cancelled";
+    if (cancelled || tab === "cancelled")
+      return cancelled && tab === "cancelled";
     return tab === "waitlisted"
       ? r.status === "waitlisted"
       : r.status === "registered" &&
@@ -46,17 +47,19 @@ export default function Registrations() {
         }
       />
       <div className="page-tabs">
-        {["upcoming", "past", "waitlisted"].map((t) => (
+        {["upcoming", "past", "waitlisted", "cancelled"].map((t) => (
           <button
             key={t}
             className={tab === t ? "active" : ""}
             onClick={() => setTab(t)}
           >
-            {t === "waitlisted"
-              ? "Waitlisted"
-              : t === "past"
-                ? "Past events"
-                : "Upcoming events"}
+            {t === "cancelled"
+              ? "Cancelled"
+              : t === "waitlisted"
+                ? "Waitlisted"
+                : t === "past"
+                  ? "Past events"
+                  : "Upcoming events"}
           </button>
         ))}
       </div>
@@ -67,7 +70,10 @@ export default function Registrations() {
           {visible.map((r) => {
             const e = events.find((e) => e.id === r.event_id)!;
             const checked = attendance.find((a) => a.registration_id === r.id);
+            const cancelled =
+              Boolean(e.cancelled_at) || r.status === "cancelled";
             const soon =
+              !cancelled &&
               new Date(e.start_time).getTime() - Date.now() < 86400000 &&
               new Date(e.end_time).getTime() > Date.now();
             return (
@@ -103,28 +109,33 @@ export default function Registrations() {
                 <div className="registration-item-action">
                   <span
                     className={
-                      r.status === "waitlisted"
+                      cancelled || r.status === "waitlisted"
                         ? "waitlist-badge"
                         : "success-badge"
                     }
                   >
-                    {r.status === "waitlisted"
-                      ? "On the waitlist"
-                      : "Confirmed"}
+                    {cancelled
+                      ? e.cancelled_at
+                        ? "Event cancelled"
+                        : "Registration cancelled"
+                      : r.status === "waitlisted"
+                        ? "On the waitlist"
+                        : "Confirmed"}
                   </span>
-                  {r.status === "registered" ? (
-                    <button
-                      className="button primary"
-                      onClick={() => setSelected(r.id)}
-                    >
-                      <TicketIcon size={16} />
-                      View QR ticket
-                    </button>
-                  ) : (
-                    <p className="muted small-copy">
-                      We’ll promote your registration when a spot opens.
-                    </p>
-                  )}
+                  {!cancelled &&
+                    (r.status === "registered" ? (
+                      <button
+                        className="button primary"
+                        onClick={() => setSelected(r.id)}
+                      >
+                        <TicketIcon size={16} />
+                        View QR ticket
+                      </button>
+                    ) : (
+                      <p className="muted small-copy">
+                        We’ll promote your registration when a spot opens.
+                      </p>
+                    ))}
                   <Link to={"/events/" + e.id} className="text-link">
                     Event details <ArrowUpRight size={14} />
                   </Link>
@@ -152,13 +163,15 @@ export default function Registrations() {
           }
         />
       )}{" "}
-      {selectedReg && selectedEvent && (
-        <Ticket
-          event={selectedEvent}
-          registration={selectedReg}
-          onClose={() => setSelected("")}
-        />
-      )}
+      {selectedReg?.status === "registered" &&
+        selectedEvent &&
+        !selectedEvent.cancelled_at && (
+          <Ticket
+            event={selectedEvent}
+            registration={selectedReg}
+            onClose={() => setSelected("")}
+          />
+        )}
     </>
   );
 }

@@ -51,7 +51,10 @@ export default function Calendar() {
             eventColor="#1B5E20"
             dayMaxEvents={3}
             events={events
-              .filter((e) => !category || e.category === category)
+              .filter(
+                (e) =>
+                  !e.cancelled_at && (!category || e.category === category),
+              )
               .map((e) => ({
                 id: e.id,
                 title: e.title,

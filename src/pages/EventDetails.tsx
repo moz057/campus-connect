@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useOrganizations } from "../contexts/OrganizationContext";
 import { useToast } from "../contexts/ToastContext";
 import { dateLabel, timeLabel, isClosed } from "../lib/utils";
 import { Empty, Loading } from "../components/Common";
@@ -33,6 +34,7 @@ export default function EventDetails() {
     announcements,
   } = useData();
   const { profile } = useAuth();
+  const { canManage, setScope } = useOrganizations();
   const notify = useToast();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false),
@@ -189,7 +191,9 @@ export default function EventDetails() {
               </strong>{" "}
               slots filled
             </div>
-            {registration ? (
+            {e.cancelled_at ? (
+              <p className="error-message">This event has been cancelled.</p>
+            ) : registration ? (
               <>
                 <div className="registration-success">
                   <Check size={18} />
@@ -281,7 +285,7 @@ export default function EventDetails() {
               <Share2 size={15} />
               Share this event
             </button>
-            {profile?.role === "admin" && (
+            {profile && canManage(e.organization_id) && (
               <div className="admin-event-actions">
                 <Link
                   className="button full-width"
@@ -293,6 +297,7 @@ export default function EventDetails() {
                 <Link
                   className="text-link"
                   to={"/admin/attendance?event=" + id}
+                  onClick={() => setScope(e.organization_id ?? "")}
                 >
                   Manage attendance <ArrowUpRight size={14} />
                 </Link>
@@ -319,7 +324,7 @@ export default function EventDetails() {
           </div>
         </aside>
       </div>
-      {ticket && registration && (
+      {ticket && registration && !e.cancelled_at && (
         <Ticket
           event={e}
           registration={registration}

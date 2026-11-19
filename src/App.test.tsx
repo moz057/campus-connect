@@ -136,6 +136,80 @@ describe("student workflows in the browser demo", () => {
   });
 });
 describe("organizer demo workflow", () => {
+  it("nominates within the leader's organization and shows the admin decision to the nominee", async () => {
+    window.history.replaceState({}, "", "/login");
+    render(<App />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Student Leader/ }),
+    );
+    const scope = await screen.findByRole("combobox", { name: "Organization" });
+    expect(
+      Array.from((scope as HTMLSelectElement).options).map(
+        (option) => option.value,
+      ),
+    ).toEqual(["cis", "sports"]);
+    expect(
+      screen.queryByRole("link", { name: "Manage organizations" }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "Leadership" }));
+    fireEvent.change(
+      await screen.findByLabelText("Find a registered student"),
+      { target: { value: "Alex Rivera" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Search students" }));
+    fireEvent.change(await screen.findByLabelText("Student"), {
+      target: { value: "demo-student" },
+    });
+    fireEvent.change(screen.getByLabelText("Position"), {
+      target: { value: "Secretary" },
+    });
+    fireEvent.change(screen.getByLabelText("Term end"), {
+      target: {
+        value: new Date(Date.now() + 30 * 86_400_000)
+          .toISOString()
+          .slice(0, 10),
+      },
+    });
+    fireEvent.change(
+      screen.getByLabelText("Why are you nominating this student?"),
+      { target: { value: "Experienced campus volunteer." } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Submit nomination" }));
+    expect(await screen.findByText("pending", { exact: true })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("link", { name: /Demo Student Leader/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Organizer/ }));
+    fireEvent.click(screen.getByRole("link", { name: "Manage organizations" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Nomination review" }),
+    );
+    fireEvent.change(screen.getByLabelText(/Decision reason/), {
+      target: { value: "Verified by Student Affairs." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+    expect(await screen.findByText("approved", { exact: true })).toBeTruthy();
+
+    fireEvent.click(
+      screen.getByRole("link", { name: /Demo University Admin/ }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Discover & register/ }),
+    );
+    fireEvent.click(screen.getByRole("link", { name: /unread notifications/ }));
+    expect(
+      await screen.findByRole("link", {
+        name: "Leadership nomination approved",
+      }),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Mark all as read" }));
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: /0 unread/ })).toBeTruthy(),
+    );
+    cleanup();
+    render(<App />);
+    expect(await screen.findByRole("link", { name: /0 unread/ })).toBeTruthy();
+  });
+
   it("switches demo roles and creates, edits and deletes an event", async () => {
     window.history.replaceState({}, "", "/login");
     render(<App />);

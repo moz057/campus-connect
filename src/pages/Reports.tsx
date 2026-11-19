@@ -18,12 +18,15 @@ import {
   TrendingUp,
   Ticket,
 } from "lucide-react";
-import { useData } from "../contexts/DataContext";
+import { useWorkspaceData } from "../contexts/DataContext";
 import { dateLabel, downloadCSV } from "../lib/utils";
 import { PageTitle, Empty } from "../components/Common";
 export default function Reports() {
-  const { events, registrations, attendance, people } = useData();
-  const [selected, setSelected] = useState("");
+  const { events, registrations, attendance, people } = useWorkspaceData();
+  const [selectedId, setSelected] = useState("");
+  const selected = events.some((event) => event.id === selectedId)
+    ? selectedId
+    : "";
   const scoped = events.filter((e) => !selected || e.id === selected);
   const regs = registrations.filter(
     (r) => !selected || r.event_id === selected,

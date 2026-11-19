@@ -10,6 +10,7 @@ export const dateLabel = (
 export const timeLabel = (value: string) =>
   dateLabel(value, { hour: "numeric", minute: "2-digit" });
 export const isClosed = (e: CampusEvent) =>
+  Boolean(e.cancelled_at) ||
   new Date(e.registration_deadline).getTime() <= Date.now();
 export const initials = (name: string) =>
   name

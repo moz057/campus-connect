@@ -10,20 +10,23 @@ import {
   ScanLine,
   TrendingUp,
 } from "lucide-react";
-import { useData } from "../contexts/DataContext";
+import { useWorkspaceData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
 import { PageTitle, Empty, Loading, DateTile } from "../components/Common";
 import { dateLabel, timeLabel, initials } from "../lib/utils";
 export default function Dashboard() {
   const { profile, demo } = useAuth();
-  const { events, people, registrations, attendance, loading } = useData();
+  const { events, people, registrations, attendance, loading } =
+    useWorkspaceData();
   if (loading) return <Loading />;
   const active = registrations.filter((r) => r.status === "registered"),
     rate = active.length
       ? Math.round((attendance.length / active.length) * 100)
       : 0;
   const upcoming = events
-    .filter((e) => new Date(e.end_time).getTime() >= Date.now())
+    .filter(
+      (e) => !e.cancelled_at && new Date(e.end_time).getTime() >= Date.now(),
+    )
     .sort((a, b) => a.start_time.localeCompare(b.start_time));
   return (
     <>
@@ -56,11 +59,11 @@ export default function Dashboard() {
             detail: upcoming.length + " coming up",
           },
           {
-            label: "Students",
+            label: "Participants",
             value: people.filter((p) => p.role === "student").length,
             icon: Users,
             color: "pale-lilac",
-            detail: "Carolinian community",
+            detail: "Students on event rosters",
           },
           {
             label: "Registrations",

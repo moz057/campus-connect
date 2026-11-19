@@ -1,5 +1,6 @@
 -- CampusConnect · run once in a new Supabase project's SQL Editor.
 -- Authorization is enforced in PostgreSQL, including atomic capacity allocation.
+-- After the baseline, apply supabase/migrations/202611190001_organizations_leadership.sql.
 begin;
 create extension if not exists pgcrypto;
 

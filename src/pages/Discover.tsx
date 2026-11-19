@@ -47,7 +47,9 @@ export default function Discover() {
     setLimit(6);
   }, [q, category, organization, date, availability]);
   const upcoming = events
-    .filter((e) => new Date(e.end_time).getTime() >= Date.now())
+    .filter(
+      (e) => !e.cancelled_at && new Date(e.end_time).getTime() >= Date.now(),
+    )
     .sort((a, b) => a.start_time.localeCompare(b.start_time));
   const filtered = useMemo(
     () =>

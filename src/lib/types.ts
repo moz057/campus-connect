@@ -1,4 +1,71 @@
 export type Role = "student" | "admin";
+export type DemoRole = Role | "leader";
+export type StudentSummary = Pick<Profile, "id" | "full_name" | "student_id">;
+export interface Organization {
+  id: string;
+  name: string;
+  description: string;
+  logo_url: string;
+  faculty_adviser: string;
+  created_by: string | null;
+  created_at: string;
+  archived_at: string | null;
+}
+export interface LeadershipTerm {
+  organization_id: string;
+  student_id: string;
+  position: string;
+  term_start: string;
+  term_end: string;
+}
+export interface Membership extends Omit<
+  LeadershipTerm,
+  "position" | "term_start" | "term_end"
+> {
+  id: string;
+  role: "member" | "leader";
+  position: string | null;
+  term_start: string | null;
+  term_end: string | null;
+  revoked_at: string | null;
+}
+export interface Nomination extends Omit<LeadershipTerm, "student_id"> {
+  id: string;
+  nominee_id: string;
+  nominated_by: string | null;
+  status: "pending" | "approved" | "rejected";
+  explanation: string;
+  reason: string | null;
+  created_at: string;
+}
+export interface LeadershipHistory {
+  id: string;
+  organization_id: string;
+  student_id: string | null;
+  actor_id: string | null;
+  nomination_id: string | null;
+  action: string;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+export interface CampusNotification {
+  id: string;
+  recipient_id: string;
+  type: string;
+  title: string;
+  message: string;
+  organization_id?: string | null;
+  event_id?: string | null;
+  nomination_id?: string | null;
+  destination: string;
+  created_at: string;
+  read_at: string | null;
+}
+export interface AnnouncementRead {
+  recipient_id: string;
+  announcement_id: string;
+  read_at: string;
+}
 export interface Profile {
   id: string;
   full_name: string;
@@ -17,6 +84,8 @@ export interface CampusEvent {
   category: string;
   organization: string;
   venue: string;
+  organization_id?: string | null;
+  cancelled_at?: string | null;
   start_time: string;
   end_time: string;
   banner_url: string;
@@ -44,6 +113,7 @@ export interface Attendance {
 export interface Announcement {
   id: string;
   event_id: string | null;
+  organization_id?: string | null;
   title: string;
   body: string;
   created_by: string;

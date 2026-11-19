@@ -11,17 +11,28 @@ import {
   Download,
 } from "lucide-react";
 import type { Html5Qrcode } from "html5-qrcode";
-import { useData } from "../contexts/DataContext";
+import { useWorkspaceData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { dateLabel, timeLabel, downloadCSV } from "../lib/utils";
 import { PageTitle, Empty, ErrorMessage } from "../components/Common";
 export default function Attendance() {
-  const { events, registrations, people, attendance, checkIn } = useData();
+  const {
+    events,
+    registrations,
+    people,
+    attendance,
+    checkIn,
+    cancelManagedRegistration,
+  } = useWorkspaceData();
   const { demo } = useAuth();
   const notify = useToast();
   const [params, setParams] = useSearchParams();
-  const eventId = params.get("event") || events[0]?.id || "";
+  const requestedEvent = params.get("event");
+  const eventId =
+    events.find((event) => event.id === requestedEvent)?.id ||
+    events[0]?.id ||
+    "";
   const [search, setSearch] = useState(""),
     [token, setToken] = useState(""),
     [scanning, setScanning] = useState(false),
@@ -349,11 +360,13 @@ export default function Attendance() {
                           ) : (
                             <button
                               className="button small-button"
-                              disabled={busy === r.id}
+                              disabled={
+                                busy === r.id || Boolean(event.cancelled_at)
+                              }
                               onClick={async () => {
                                 setBusy(r.id);
                                 try {
-                                  await checkIn(eventId, r.qr_token);
+                                  await checkIn(eventId, r.id, true);
                                   notify(
                                     (p?.full_name || "Student") +
                                       " checked in.",
@@ -368,6 +381,37 @@ export default function Attendance() {
                               {busy === r.id ? "Saving…" : "Check in"}
                             </button>
                           )}
+                          {!a &&
+                            !event.cancelled_at &&
+                            Date.parse(event.start_time) > Date.now() && (
+                              <button
+                                type="button"
+                                className="danger-link"
+                                disabled={busy === r.id}
+                                onClick={async () => {
+                                  if (
+                                    !window.confirm(
+                                      "Cancel this student's registration?",
+                                    )
+                                  )
+                                    return;
+                                  setBusy(r.id);
+                                  try {
+                                    await cancelManagedRegistration(
+                                      eventId,
+                                      r.user_id,
+                                    );
+                                    notify("Registration cancelled.");
+                                  } catch (e) {
+                                    notify((e as Error).message, true);
+                                  } finally {
+                                    setBusy("");
+                                  }
+                                }}
+                              >
+                                Cancel registration
+                              </button>
+                            )}
                         </div>
                       );
                     })

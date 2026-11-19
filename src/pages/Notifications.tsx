@@ -1,82 +1,160 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Bell, CheckCheck, Megaphone, ArrowUpRight, Send } from "lucide-react";
+import {
+  Bell,
+  CheckCheck,
+  Megaphone,
+  ArrowUpRight,
+  RefreshCw,
+} from "lucide-react";
 import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useOrganizations } from "../contexts/OrganizationContext";
 import { useToast } from "../contexts/ToastContext";
 import { dateLabel } from "../lib/utils";
-import { PageTitle, Field, Empty, ErrorMessage } from "../components/Common";
+import {
+  PageTitle,
+  Field,
+  Empty,
+  ErrorMessage,
+  Loading,
+} from "../components/Common";
+
 export default function Notifications() {
   const { profile } = useAuth();
-  const { announcements, events, postAnnouncement } = useData();
+  const {
+    announcements,
+    events,
+    postAnnouncement,
+    refresh: refreshCampus,
+    loading: campusLoading,
+    error: campusError,
+  } = useData();
+  const {
+    organizer,
+    manageable,
+    canManage,
+    notifications,
+    announcementReads,
+    scope,
+    markRead,
+    refresh,
+    loading,
+    error,
+  } = useOrganizations();
   const notify = useToast();
-  const key = "cc-read-" + profile?.id;
-  const [read, setRead] = useState<string[]>(() =>
-    JSON.parse(localStorage.getItem(key) || "[]"),
+  const admin = profile?.role === "admin";
+  const [tab, setTab] = useState("all");
+  const [compose, setCompose] = useState(false);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [audience, setAudience] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState("");
+  const readIds = new Set(
+    announcementReads.map((receipt) => receipt.announcement_id),
   );
-  const [tab, setTab] = useState("all"),
-    [compose, setCompose] = useState(false),
-    [title, setTitle] = useState(""),
-    [body, setBody] = useState(""),
-    [event, setEvent] = useState(""),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
-  const unread = announcements.filter((a) => !read.includes(a.id));
-  function mark(ids: string[]) {
-    const next = [...new Set([...read, ...ids])];
-    setRead(next);
-    localStorage.setItem(key, JSON.stringify(next));
-    window.dispatchEvent(new Event("cc-read"));
+  const updates = [
+    ...notifications.map((n) => ({
+      ...n,
+      unread: !n.read_at,
+      announcement: false,
+    })),
+    ...announcements.map((a) => ({
+      id: a.id,
+      created_at: a.created_at,
+      title: a.title,
+      message: a.body,
+      unread: !readIds.has(a.id),
+      announcement: true,
+      destination: a.event_id
+        ? "/events/" + a.event_id
+        : a.organization_id
+          ? "/organizations/" + a.organization_id
+          : "",
+      type: a.event_id
+        ? "Event announcement"
+        : a.organization_id
+          ? "Organization announcement"
+          : "Campus announcement",
+    })),
+  ].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const unread = updates.filter((item) => item.unread);
+
+  async function mark(id?: string, announcement = false) {
+    try {
+      await markRead(announcements, id, announcement);
+      if (!id) notify("All updates marked as read.");
+    } catch (e) {
+      notify((e as Error).message, true);
+    }
   }
+  async function publish(e: React.FormEvent) {
+    e.preventDefault();
+    setProblem("");
+    setBusy(true);
+    try {
+      await postAnnouncement(
+        title.trim(),
+        body.trim(),
+        audience.startsWith("event:") ? audience.slice(6) : null,
+        audience.startsWith("org:") ? audience.slice(4) : null,
+      );
+      setTitle("");
+      setBody("");
+      setCompose(false);
+      notify("Announcement posted.");
+    } catch (err) {
+      setProblem((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const visible = tab === "unread" ? unread : updates;
   return (
     <>
       <PageTitle
-        eyebrow="THE CAMPUS CONVERSATION"
-        title="Stay in the loop"
-        description="The latest updates from your university and the events you’re part of."
+        title="Notifications"
+        description="Personal notifications and announcements from CampusConnect."
         action={
           <div className="button-row">
             <button
               className="button"
-              onClick={() => mark(announcements.map((a) => a.id))}
+              onClick={() => void Promise.all([refresh(), refreshCampus()])}
             >
-              <CheckCheck size={16} />
-              Mark all as read
+              <RefreshCw size={16} /> Refresh
             </button>
-            {profile?.role === "admin" && (
+            <button
+              className="button"
+              disabled={!unread.length}
+              onClick={() => void mark()}
+            >
+              <CheckCheck size={16} /> Mark all as read
+            </button>
+            {organizer && (
               <button
                 className="button primary"
-                onClick={() => setCompose(!compose)}
+                onClick={() => {
+                  if (!compose)
+                    setAudience(
+                      scope && manageable.some((org) => org.id === scope)
+                        ? "org:" + scope
+                        : "",
+                    );
+                  setCompose(!compose);
+                }}
               >
-                <Megaphone size={16} />
-                Post announcement
+                <Megaphone size={16} /> Post announcement
               </button>
             )}
           </div>
         }
       />
-      {compose && (
-        <form
-          className="panel compose-panel"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            setError("");
-            setBusy(true);
-            try {
-              await postAnnouncement(title.trim(), body.trim(), event || null);
-              setTitle("");
-              setBody("");
-              setCompose(false);
-              notify("Announcement posted.");
-            } catch (e) {
-              setError((e as Error).message);
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <h2>Share a campus update</h2>
-          <ErrorMessage message={error} />
+      <ErrorMessage message={error || campusError} />
+      {compose && organizer && (
+        <form className="panel compose-panel" onSubmit={publish}>
+          <h2>Post an announcement</h2>
+          <ErrorMessage message={problem} />
           <div className="form-grid">
             <Field label="Title">
               <input
@@ -85,17 +163,32 @@ export default function Notifications() {
                 maxLength={160}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="What’s the news?"
               />
             </Field>
             <Field label="Audience">
-              <select value={event} onChange={(e) => setEvent(e.target.value)}>
-                <option value="">Everyone on campus</option>
-                {events.map((e) => (
-                  <option value={e.id} key={e.id}>
-                    {e.title}
+              <select
+                required={!admin}
+                value={audience}
+                onChange={(e) => setAudience(e.target.value)}
+              >
+                <option value="">
+                  {admin ? "Everyone on campus" : "Choose an audience"}
+                </option>
+                {manageable.map((org) => (
+                  <option key={org.id} value={"org:" + org.id}>
+                    {org.name} members
                   </option>
                 ))}
+                {events
+                  .filter(
+                    (event) =>
+                      !event.cancelled_at && canManage(event.organization_id),
+                  )
+                  .map((event) => (
+                    <option key={event.id} value={"event:" + event.id}>
+                      {event.title} registrants
+                    </option>
+                  ))}
               </select>
             </Field>
             <div className="span-two">
@@ -107,62 +200,55 @@ export default function Notifications() {
                   rows={4}
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  placeholder="Let the community know…"
                 />
               </Field>
             </div>
           </div>
           <div className="form-footer">
-            <span>
-              Event announcements are visible to that event’s registrants.
-            </span>
             <button className="button primary" disabled={busy}>
-              <Send size={16} />
               {busy ? "Posting…" : "Publish announcement"}
             </button>
           </div>
         </form>
       )}
       <div className="page-tabs">
-        <button
-          className={tab === "all" ? "active" : ""}
-          onClick={() => setTab("all")}
-        >
-          All updates <span>{announcements.length}</span>
-        </button>
-        <button
-          className={tab === "unread" ? "active" : ""}
-          onClick={() => setTab("unread")}
-        >
-          Unread <span>{unread.length}</span>
-        </button>
+        {["all", "unread"].map((name) => (
+          <button
+            key={name}
+            className={tab === name ? "active" : ""}
+            aria-pressed={tab === name}
+            onClick={() => setTab(name)}
+          >
+            {name === "all" ? "All" : "Unread"}{" "}
+            <span>{name === "all" ? updates.length : unread.length}</span>
+          </button>
+        ))}
       </div>
-      <div className="announcements-list">
-        {(tab === "unread" ? unread : announcements)
-          .sort((a, b) => b.created_at.localeCompare(a.created_at))
-          .map((a) => (
+      {loading || campusLoading ? (
+        <Loading />
+      ) : visible.length ? (
+        <div className="announcements-list">
+          {visible.map((item) => (
             <article
               className={
-                "announcement-card panel " +
-                (!read.includes(a.id) ? "unread" : "")
+                "announcement-card panel " + (item.unread ? "unread" : "")
               }
-              key={a.id}
+              key={item.id}
             >
-              <div
-                className={
-                  "announcement-icon " +
-                  (a.event_id ? "pale-lilac" : "pale-green")
-                }
-              >
-                {a.event_id ? <Bell size={22} /> : <Megaphone size={22} />}
+              <div className="announcement-icon pale-green">
+                {item.announcement ? (
+                  <Megaphone size={22} />
+                ) : (
+                  <Bell size={22} />
+                )}
               </div>
               <div>
                 <div className="announcement-topline">
                   <span className="eyebrow">
-                    {a.event_id ? "EVENT UPDATE" : "CAMPUS ANNOUNCEMENT"}
+                    {item.announcement ? item.type : "Personal notification"}
                   </span>
-                  <time>
-                    {dateLabel(a.created_at, {
+                  <time dateTime={item.created_at}>
+                    {dateLabel(item.created_at, {
                       month: "short",
                       day: "numeric",
                       hour: "numeric",
@@ -170,35 +256,54 @@ export default function Notifications() {
                     })}
                   </time>
                 </div>
-                <h2>{a.title}</h2>
-                <p className="preserve-lines">{a.body}</p>
+                <h2>
+                  {item.destination ? (
+                    <Link
+                      to={item.destination}
+                      onClick={() =>
+                        item.unread && void mark(item.id, item.announcement)
+                      }
+                    >
+                      {item.title}
+                    </Link>
+                  ) : (
+                    item.title
+                  )}
+                </h2>
+                <p className="preserve-lines">{item.message}</p>
                 <div className="announcement-actions">
-                  {a.event_id && (
-                    <Link to={"/events/" + a.event_id} className="text-link">
-                      View event <ArrowUpRight size={14} />
+                  {item.destination && (
+                    <Link
+                      className="text-link"
+                      to={item.destination}
+                      onClick={() =>
+                        item.unread && void mark(item.id, item.announcement)
+                      }
+                    >
+                      Open <ArrowUpRight size={14} />
                     </Link>
                   )}
-                  {!read.includes(a.id) && (
-                    <button className="text-link" onClick={() => mark([a.id])}>
+                  {item.unread && (
+                    <button
+                      className="text-link"
+                      onClick={() => void mark(item.id, item.announcement)}
+                    >
                       Mark as read <CheckCheck size={14} />
                     </button>
                   )}
                 </div>
               </div>
-              {!read.includes(a.id) && <span className="unread-dot" />}
+              {item.unread && <span className="unread-dot" />}
             </article>
           ))}
-        {(tab === "unread" ? unread : announcements).length === 0 && (
-          <Empty
-            title={
-              tab === "unread"
-                ? "You’re all caught up"
-                : "A quiet moment on campus"
-            }
-            body="New campus updates will appear here. Check back soon."
-          />
-        )}
-      </div>
+        </div>
+      ) : (
+        <Empty
+          title={
+            tab === "unread" ? "You're all caught up" : "No notifications yet"
+          }
+        />
+      )}
     </>
   );
 }

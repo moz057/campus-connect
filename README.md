@@ -28,9 +28,9 @@ campusconnect/
 ## Setup: 1. Create your Supabase project
 
 1. Create a project at https://supabase.com/dashboard in your organization. Choose a suitable database region and a strong database password.
-2. Open **SQL Editor → New query**. Paste the entire contents of `supabase/schema.sql`, then run it **once on a fresh project**. It runs in a transaction. Do not run repeatedly against an existing populated schema; use reviewed migrations for later changes.
+2. In the SQL Editor, run `supabase/schema.sql` once for a fresh project, then run the organization and leadership migration below. For an existing CampusConnect project, apply only the migration.
 3. In **Authentication → Providers**, enable Email/Password. Email confirmation is recommended. Configure an SMTP provider before real student onboarding; Supabase's default email delivery has limits.
-4. In **Authentication → URL Configuration**, set Site URL to your production origin. Add `http://localhost:5173/**` and your production origin's `/**` path as allowed redirect URLs. Adjust the localhost port if Vite chooses a different one.
+4. In **Authentication → URL Configuration**, set the Site URL to your production origin. Add the full production `/auth/callback` URL and `http://localhost:5173/auth/callback` for local signup tests. Use the actual Vite port.
 5. The SQL creates two public image buckets, `avatars` (2 MB) and `event-banners` (5 MB), with MIME restrictions and upload policies. Never place private documents in these public buckets.
 
 ## Setup: 2. Configure and run the app
@@ -57,11 +57,11 @@ npm run dev
 
 Open the exact URL printed by Vite, normally `http://localhost:5173`.
 
-Without valid environment variables the app starts in **demo mode**. Demo student and organizer roles are available at `/login`. Edits are stored only in browser localStorage. There is no production role switch when Supabase is connected. Demo data and demo accounts are never uploaded to Supabase. To reset the demo, remove `cc-session` and `cc-data-v1` from the browser's Local Storage and refresh.
+Without valid Supabase variables, open `/login` and choose **Student**, **Student Leader**, or **Organizer** (university admin). Demo accounts and workflows are stored in the browser. To try the demo while keeping your existing `.env.local`, override `VITE_SUPABASE_URL` in the terminal running Vite with `https://YOUR_PROJECT.supabase.co`. Use a separate browser profile for a fresh demo.
 
 Vite injects these values **at build time**. Restart Vite after changing environment variables. For production, set them in the build environment and rebuild; changing hosting runtime variables cannot reconfigure an existing static bundle.
 
-## Setup: 3. Create the first organizer
+## Setup: 3. Assign the first university admin
 
 1. Visit `/register`, create a student account, and confirm its email.
 2. As the database owner in the SQL Editor, run the following after replacing the email with your verified organizer's email:
@@ -76,7 +76,7 @@ where p.id = u.id and lower(u.email) = lower('organizer@usc.edu.ph');
 3. Log out and back in (or refresh) to load the updated role.
 4. Open `/admin` to create the first event. Optionally run `supabase/seed.sql` for sample events first. The seed does not create users or assign roles.
 
-Only a trusted database administrator can assign organizer roles. Signup metadata always creates a `student` profile; students cannot update the `role` column. Client routes are only a usability layer; PostgreSQL policies and RPC checks enforce the same boundaries.
+Only a trusted database administrator can assign university admin access. Signup creates a student profile. University admins manage organization leadership from **Manage organizations**.
 
 ## Features, in implementation order
 
@@ -85,8 +85,8 @@ Only a trusted database administrator can assign organizer roles. Signup metadat
 3. **Discovery:** landing/discovery page, event cards, keyword/category/date/organization/availability filters, grid/list views and event detail pages.
 4. **Calendar:** FullCalendar month/week views, category filter, event click navigation. Calendar and form inputs use device-local time; detail pages and tickets explicitly display Philippine Time (Asia/Manila).
 5. **Registration:** one-click confirmation/cancellation, capacity indicator, duplicate prevention, optional waitlist, promotion before the deadline, QR tickets and print/save as PDF.
-6. **Communication:** global and event-specific announcements, per-user browser read state, notification bell/feed, and soon-starting banners on event details and registrations.
-7. **Organizer management:** dashboard, create/edit/delete events, banner uploads, registrant lists, camera QR scanning and manual check-in.
+6. **Communication:** campus, organization, and event announcements, personal workflow notifications, and a shared unread count with database-backed read state.
+7. **Management:** recognized organizations, scoped organizer workspaces, leadership appointments and nominations, event management, registrant search and cancellation, and QR or manual check-in.
 8. **Reports:** per-event and aggregate metrics, daily registration chart for the last 14 days, attendance comparison, registrant detail and CSV export.
 
 ## Important behavior
@@ -96,9 +96,9 @@ Only a trusted database administrator can assign organizer roles. Signup metadat
 - Check-in opens two hours before an event in the real database. Organizers can reconcile attendance later. For easy testing, demo check-in is available at any time.
 - Cancellation closes when an event starts and cannot cancel an already-attended ticket. Promotion selects the earliest waitlisted row before the registration deadline.
 - Lowering event capacity below confirmed registrations is blocked by both UI validation and a database trigger.
-- All organizers have campus-wide event administration permissions, as requested. This model does not isolate organizers by organization.
-- Public users can browse event information and aggregate seat counts. Student profiles, tickets, and attendance require authentication. Students can read their own records; organizers can read all for management/reporting. Event-specific announcements are visible only to active registrants and organizers.
-- Announcement read state is device-local; announcements themselves are durable in Supabase. Waitlist promotions appear when data refreshes; no push/email notification or realtime subscription service is included.
+- University admins oversee all events. Student leaders can manage events, attendance, announcements, and reports only for active organizations in which they have an approved, unrevoked appointment. Philippine calendar dates determine the term, including both endpoints.
+- Public users can browse events, recognized organizations, and seat counts. Profile and QR ticket records are private to the account owner. Organizer rosters expose only reporting and attendance fields for events the organizer manages. Leadership lookup returns student name and student ID.
+- Announcements and personal notifications share a feed. Personal notifications are generated within the database transaction that records the change. Announcements appear once in the feed. Supported clients refresh on navigation, on window focus, and through the **Refresh** button.
 - CSV export neutralizes spreadsheet formula prefixes and quotes cells containing commas, quotes, and newlines.
 - Image links and uploaded profile photos are public. Demo image uploads are limited to 500 KB to fit browser storage. The campus and activity photos are illustrative stock images from Unsplash, not official USC photography; the graduation-cap mark is a placeholder, not an official university seal.
 
@@ -112,15 +112,39 @@ npm run preview
 
 `npm test` covers demo student/organizer workflows in a simulated DOM, event validation, CSV safety, and a PostgreSQL-compatible integration test for schema/RLS/registration/check-in rules. The SQL tests use in-memory PGlite with small stubs for Supabase's auth/storage schemas; they do not replace testing against your actual Supabase project or validate simultaneous multi-connection requests.
 
-Deploy the generated `dist/` folder to a static host. Configure an **SPA fallback** so routes such as `/events/…` and `/admin/reports` return `index.html`. For Netlify/Cloudflare Pages, the included `public/_redirects` is copied into the build. For other hosts, configure their equivalent rewrite. Always use HTTPS; browser camera scanning requires a secure context (HTTPS or localhost), camera permission, and supported hardware.
+Vercel uses the repository-root `vercel.json` for React Router deep links. A Vite production build outputs to `dist/`. Netlify and Cloudflare Pages can use the fallback in `public/_redirects`. Camera scanning requires HTTPS or localhost and camera permission.
 
-The hosted preview supplied with this project uses demo mode until rebuilt with your project's public configuration. Live Supabase email delivery, storage, and camera hardware must be verified after connection.
+Email delivery, real Supabase Storage, and camera hardware require separate connected-environment checks.
 
-## Manual acceptance checks with your Supabase project
 
-- Sign up two students and one approved organizer. Verify confirmation, login/logout, own-profile editing, and denied access to `/admin` from a student account.
-- Create an event with capacity 1 and a future deadline. Register student A; verify duplicate registration is rejected. Student B should be offered a waitlist, then promoted when A cancels before the deadline.
-- Verify students cannot read another student's registration/QR token or change their own role through a direct API request.
-- Within the check-in window, scan or manually mark a confirmed ticket. Reusing the ticket, scanning for a different event, or using a waitlisted/cancelled ticket must fail.
-- Check event edits, deletion cascade, event-specific announcement visibility, CSV contents, photo/banner uploads, and month/week calendar navigation.
-- Test on a phone at narrow widths, with a screen reader, and with a physical camera. Keyboard tab order, focus visibility, input labels, empty/error/loading states and reduced-motion support are included; a complete accessibility audit has not been performed.
+## Apply the organization and leadership migration
+
+Use [202611190001_organizations_leadership.sql](supabase/migrations/202611190001_organizations_leadership.sql). Review it on a disposable Supabase project or local database first. For an existing project, take a database backup, then run the migration once as the database owner in the SQL Editor. Run the original schema first only when setting up a fresh database. The migration runs in one transaction. Deploy the matching frontend after it completes.
+
+Existing accounts, roles, events, registrations, attendance, and announcements are retained. Existing events keep their original organization text and initially have a null organization ID. University admins can manage these legacy events until they assign them to recognized organizations.
+
+1. Review the legacy labels in the SQL Editor. This query is read-only.
+
+   ```sql
+   select organization, count(*) as events
+   from public.events
+   where organization_id is null
+   group by organization
+   order by organization;
+   ```
+
+2. Create the recognized organizations in **Manage organizations**. Open each legacy event in **Edit event** and select its verified organization. Campus-wide events can keep a null organization ID. For a batch assignment, use a reviewed list of exact event IDs and the verified organization ID in a transaction.
+3. Review student leadership separately. Free-text profile affiliations never grant access. Use **Direct appointment** or approve a nomination. Retain existing admin roles and use the trusted database operation above for initial admin assignments.
+
+Archiving an organization ends its leaders' management access, cancels upcoming events, and preserves event, registration, and attendance records. Students can see their cancelled entries in **My registrations → Cancelled**. Admins can still see archived records and reject unresolved nominations for that organization. Deleting an event is a separate, explicit action that keeps the existing cascading deletion behavior. The browser-only announcement read flags from the earlier version may appear unread once when switching to persistent receipts.
+
+## Test the three roles
+
+Run the checks below in the browser demo or a disposable Supabase project. Use separate browser profiles for simultaneous connected roles. In demo mode, the header's **Demo** link lets you switch roles.
+
+- **Student** — Register for a one-seat future event, waitlist a second student, and cancel the first registration. Verify promotion, the updated QR ticket, and the separate private in-app notifications. Use the Unread filter, mark one or all as read, and reload. In a connected test project, sign in from a second browser to verify the read state persists there too.
+- **Student Leader** — Select an organization, create and edit its events, manage registrants, post an announcement, and export a report. Check that a second organization's event and admin-only tools are unavailable. Nominate a registered student within your organization and verify that the pending nomination grants no access.
+- **University Admin** — Create and edit a recognized organization. Directly appoint a student and edit their term. Approve one nomination and reject another with a reason. Check the nominee and nominator notifications and the leadership history. Verify the start and end date boundaries, then revoke an active appointment and archive an organization with an upcoming event.
+- **Attendance** — Within two hours of a connected test event, scan or manually check in a confirmed registrant. Verify that wrong-event, waitlisted, cancelled, and replayed tickets are rejected. Demo check-in is available any time.
+
+The automated database tests apply the baseline, seed existing users and events, then apply the incremental migration in PGlite. They exercise RLS, appointment terms, nomination decisions, notification privacy and read receipts, and the original registration and check-in paths. The browser tests exercise demo workflows. They do not use the live database.

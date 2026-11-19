@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ImagePlus, Save, ArrowUpRight } from "lucide-react";
 import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useOrganizations } from "../contexts/OrganizationContext";
 import { useToast } from "../contexts/ToastContext";
 import { categories } from "../lib/types";
 import { localInput, validateEvent } from "../lib/utils";
@@ -18,6 +19,7 @@ function EventEditor() {
   const { id } = useParams();
   const { events, saveEvent } = useData();
   const { profile } = useAuth();
+  const { organizations, manageable, scope, canManage } = useOrganizations();
   const notify = useToast(),
     navigate = useNavigate();
   const existing = events.find((e) => e.id === id);
@@ -28,7 +30,11 @@ function EventEditor() {
     title: existing?.title || "",
     description: existing?.description || "",
     category: existing?.category || "Academic",
-    organization: existing?.organization || profile?.organization || "",
+    organization_id: existing
+      ? (existing.organization_id ?? "")
+      : manageable.some((org) => org.id === scope)
+        ? scope
+        : "",
     venue: existing?.venue || "",
     banner_url: existing?.banner_url || "",
     capacity: existing?.capacity || 100,
@@ -47,19 +53,27 @@ function EventEditor() {
     [error, setError] = useState("");
   const set = (key: string, value: string | number) =>
     setForm((s) => ({ ...s, [key]: value }));
-  if (id && !existing)
+  if (id && (!existing || !canManage(existing.organization_id)))
     return (
       <Empty title="Event not found" body="This event may have been deleted." />
     );
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    const organization = organizations.find(
+      (item) => item.id === form.organization_id,
+    );
     const event = {
       ...form,
       id,
       title: form.title.trim(),
       description: form.description.trim(),
-      organization: form.organization.trim(),
+      organization_id: form.organization_id || null,
+      organization:
+        organization?.name ??
+        (existing && !existing.organization_id
+          ? existing.organization
+          : "University of San Carlos"),
       venue: form.venue.trim(),
       start_time: new Date(form.start_time).toISOString(),
       end_time: new Date(form.end_time).toISOString(),
@@ -147,13 +161,33 @@ function EventEditor() {
                   </select>
                 </Field>
                 <Field label="Organizing group">
-                  <input
-                    required
-                    maxLength={160}
-                    value={form.organization}
-                    onChange={(e) => set("organization", e.target.value)}
-                    placeholder="Your organization"
-                  />
+                  <select
+                    required={profile?.role !== "admin"}
+                    disabled={Boolean(id) && profile?.role !== "admin"}
+                    value={form.organization_id}
+                    onChange={(e) => set("organization_id", e.target.value)}
+                  >
+                    {profile?.role === "admin" && (
+                      <option value="">
+                        {existing && !existing.organization_id
+                          ? existing.organization + " (unassigned)"
+                          : "University of San Carlos"}
+                      </option>
+                    )}
+                    {manageable.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.name}
+                      </option>
+                    ))}
+                    {existing?.organization_id &&
+                      !manageable.some(
+                        (o) => o.id === existing.organization_id,
+                      ) && (
+                        <option value={existing.organization_id}>
+                          {existing.organization} (archived)
+                        </option>
+                      )}
+                  </select>
                 </Field>
               </div>
             </section>

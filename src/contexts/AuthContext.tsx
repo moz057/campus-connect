@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { isAuthApiError } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
-import type { Profile, Role } from "../lib/types";
+import type { DemoRole, Profile } from "../lib/types";
 import { useToast } from "./ToastContext";
 import { demoProfile } from "../data/demo";
 interface AuthValue {
@@ -19,7 +19,7 @@ interface AuthValue {
   resendConfirmation: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   saveProfile: (p: Partial<Profile>) => Promise<void>;
-  demoLogin: (role: Role) => void;
+  demoLogin: (role: DemoRole) => void;
 }
 const AuthContext = createContext<AuthValue>(null!);
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setProfile({ ...profile, ...safe } as Profile);
   }
-  function demoLogin(role: Role) {
+  function demoLogin(role: DemoRole) {
     if (supabase) return;
     setProfile({
       ...demoProfile,
@@ -176,8 +176,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             student_id: "USC-STAFF",
             organization: "Student Affairs Office",
           }
-        : {}),
-      role,
+        : role === "leader"
+          ? {
+              id: "demo-leader",
+              full_name: "Sam Villanueva",
+              student_id: "23104999",
+            }
+          : {}),
+      role: role === "admin" ? "admin" : "student",
     });
   }
   return (
