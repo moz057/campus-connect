@@ -309,8 +309,9 @@ function EventEditor() {
                 Require students to confirm they submitted the form
               </label>
               <div className="info-note">
-                When the event fills up, students can join a waitlist. Cancelled
-                spots go to the next student in line before the deadline.
+                Before the registration deadline, seats freed by cancellations
+                or a higher registration limit go to waitlisted students in the
+                order they joined.
               </div>
             </section>
           </div>
@@ -370,7 +371,10 @@ function EventEditor() {
                 <input
                   type="url"
                   value={
-                    form.banner_url.startsWith("data:") ? "" : form.banner_url
+                    form.banner_url.startsWith("data:") ||
+                    form.banner_url.startsWith("/")
+                      ? ""
+                      : form.banner_url
                   }
                   onChange={(e) => set("banner_url", e.target.value)}
                   placeholder="https://…"

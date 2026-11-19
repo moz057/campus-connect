@@ -98,6 +98,15 @@ beforeAll(async () => {
       "utf8",
     ),
   );
+  await db.exec(
+    readFileSync(
+      new URL(
+        "./migrations/202611190004_promote_waitlist_on_capacity_increase.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
 }, 30000);
 afterAll(async () => {
   await db.close();
@@ -851,4 +860,75 @@ it("seeds presentation data without duplicating or replacing existing records", 
     (await db.query("select id from public.events where id=$1", [ids.event]))
       .rows,
   ).toHaveLength(1);
+});
+
+it("fills added capacity from the front of the waitlist while registration is open", async () => {
+  await actor(ids.admin);
+  const {
+    rows: [event],
+  } = await db.query<{ id: string }>(
+    `
+    insert into public.events(title,description,category,venue,start_time,end_time,capacity,registration_deadline,created_by)
+    values ('Added seats','An event for testing new seats.','Academic','Talamban',now()+interval '1 day',now()+interval '2 days',1,now()+interval '1 hour',$1)
+    returning id
+  `,
+    [ids.admin],
+  );
+  const confirmed = await register(event.id);
+  const queued = [];
+  for (const student of [ids.a, ids.b, ids.c]) {
+    await actor(student);
+    queued.push(await register(event.id, true));
+  }
+
+  await db.exec("reset role");
+  for (const [index, registration] of queued.entries()) {
+    await db.query(
+      "update public.registrations set created_at=now()+$2::interval where id=$1",
+      [registration.id, index - 3 + " minutes"],
+    );
+  }
+  await actor(ids.admin);
+  await db.query("update public.events set capacity=3 where id=$1", [event.id]);
+  await actor(ids.a);
+  const readOwnSeat = async () =>
+    (
+      await db.query<{ status: string; qr_token: string }>(
+        "select status,qr_token from public.registrations where event_id=$1",
+        [event.id],
+      )
+    ).rows[0];
+  const promotionNotices = async () =>
+    (
+      await db.query(
+        "select id from public.notifications where event_id=$1 and type='waitlist_promoted'",
+        [event.id],
+      )
+    ).rows;
+  for (const [index, student] of [ids.a, ids.b].entries()) {
+    await actor(student);
+    const seat = await readOwnSeat();
+    expect(seat.status).toBe("registered");
+    expect(seat.qr_token).not.toBe(queued[index].qr_token);
+    expect(await promotionNotices()).toHaveLength(1);
+  }
+  await actor(ids.c);
+  expect(await readOwnSeat()).toMatchObject({
+    status: "waitlisted",
+    qr_token: queued[2].qr_token,
+  });
+  expect(await promotionNotices()).toHaveLength(0);
+
+  await actor(ids.admin);
+  expect(await readOwnSeat()).toMatchObject({
+    status: "registered",
+    qr_token: confirmed.qr_token,
+  });
+  await db.query(
+    "update public.events set capacity=4, registration_deadline=now()-interval '1 minute' where id=$1",
+    [event.id],
+  );
+  await actor(ids.c);
+  expect((await readOwnSeat()).status).toBe("waitlisted");
+  expect(await promotionNotices()).toHaveLength(0);
 });

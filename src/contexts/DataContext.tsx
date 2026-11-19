@@ -371,6 +371,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       ),
     }));
   }
+  function waitlistFor(eventId: string) {
+    return state.registrations
+      .filter((r) => r.event_id === eventId && r.status === "waitlisted")
+      .sort(
+        (a, b) =>
+          a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id),
+      );
+  }
   async function cancel(id: string) {
     await cancelFor(id, requireProfile().id, false);
   }
@@ -405,11 +413,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (state.attendance.some((a) => a.registration_id === r.id))
       throw Error("An attended ticket cannot be cancelled.");
     const promoted =
-      r.status === "registered" && !isClosed(e)
-        ? state.registrations
-            .filter((x) => x.event_id === id && x.status === "waitlisted")
-            .sort((a, b) => a.created_at.localeCompare(b.created_at))[0]
-        : null;
+      r.status === "registered" && !isClosed(e) ? waitlistFor(id)[0] : null;
     if (promoted)
       addDemoNotices([
         notifyEvent(
@@ -556,10 +560,41 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ),
       );
     }
+    const capacityIncreased = existing && result.capacity > existing.capacity;
+    const waiting = capacityIncreased ? waitlistFor(result.id) : [];
+    const promoted =
+      capacityIncreased && !isClosed(result)
+        ? waiting.slice(0, Math.max(0, result.capacity - (result.filled ?? 0)))
+        : [];
+    if (capacityIncreased) {
+      result.filled = (result.filled ?? 0) + promoted.length;
+      result.waitlisted = waiting.length - promoted.length;
+    }
+    const tickets = new Map(
+      promoted.map((registration) => [registration.id, crypto.randomUUID()]),
+    );
     setState((s) => ({
       ...s,
+      registrations: tickets.size
+        ? s.registrations.map((registration) => {
+            const token = tickets.get(registration.id);
+            return token
+              ? { ...registration, status: "registered", qr_token: token }
+              : registration;
+          })
+        : s.registrations,
       events: [...s.events.filter((e) => e.id !== result.id), result],
     }));
+    addDemoNotices(
+      promoted.map((registration) =>
+        notifyEvent(
+          registration.user_id,
+          result,
+          "waitlist_promoted",
+          "A seat opened for you",
+        ),
+      ),
+    );
     return result.id;
   }
   async function deleteEvent(id: string) {

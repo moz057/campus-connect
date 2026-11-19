@@ -183,6 +183,60 @@ describe("student workflows in the browser demo", () => {
       screen.queryByRole("button", { name: "View my QR ticket" }),
     ).toBeNull();
   });
+  it("gives a waitlisted demo student a QR ticket when the registration limit increases", async () => {
+    window.history.replaceState({}, "", "/events/event-4");
+    render(<App />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Join the waitlist" }),
+    );
+    expect(await screen.findByText("You’re on the waitlist.")).toBeTruthy();
+    cleanup();
+
+    window.history.replaceState({}, "", "/login");
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: /Organizer/ }));
+    cleanup();
+    window.history.replaceState({}, "", "/admin/events/event-4/edit");
+    render(<App />);
+    fireEvent.change(await screen.findByLabelText(/Registration limit/), {
+      target: { value: 87 },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save event" }));
+    await waitFor(() =>
+      expect(window.location.pathname).toBe("/events/event-4"),
+    );
+    const saved = JSON.parse(localStorage.getItem("cc-data-v1")!);
+    expect(
+      saved.events.find((event: { id: string }) => event.id === "event-4"),
+    ).toMatchObject({ capacity: 87, filled: 87, waitlisted: 0 });
+    expect(
+      saved.registrations.find(
+        (reg: { event_id: string; user_id: string }) =>
+          reg.event_id === "event-4" && reg.user_id === "demo-student",
+      )?.status,
+    ).toBe("registered");
+    cleanup();
+
+    window.history.replaceState({}, "", "/login");
+    render(<App />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Discover & register/ }),
+    );
+    cleanup();
+    window.history.replaceState({}, "", "/events/event-4");
+    render(<App />);
+    expect(
+      await screen.findByRole("button", { name: "View my QR ticket" }),
+    ).toBeTruthy();
+    cleanup();
+
+    window.history.replaceState({}, "", "/notifications");
+    render(<App />);
+    expect(
+      await screen.findByRole("link", { name: "A seat opened for you" }),
+    ).toBeTruthy();
+  });
+
   it("keeps students out of organizer routes", async () => {
     window.history.replaceState({}, "", "/admin");
     render(<App />);
