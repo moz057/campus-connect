@@ -19,7 +19,12 @@ import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useOrganizations } from "../contexts/OrganizationContext";
 import { useToast } from "../contexts/ToastContext";
-import { dateLabel, timeLabel, isClosed } from "../lib/utils";
+import {
+  dateLabel,
+  timeLabel,
+  isClosed,
+  parseRegistrationFormUrl,
+} from "../lib/utils";
 import { Empty, Loading } from "../components/Common";
 import Ticket from "../components/Ticket";
 export default function EventDetails() {
@@ -39,6 +44,10 @@ export default function EventDetails() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false),
     [ticket, setTicket] = useState(false);
+  const [confirmedForm, setConfirmedForm] = useState<{
+    eventId: string;
+    url: string;
+  }>();
   const e = events.find((e) => e.id === id);
   if (loading) return <Loading />;
   if (!e)
@@ -61,6 +70,10 @@ export default function EventDetails() {
     ),
     full = (e.filled || 0) >= e.capacity,
     closed = isClosed(e);
+  const formUrl = parseRegistrationFormUrl(e.registration_form_url);
+  const formConfirmed =
+    confirmedForm?.eventId === e.id &&
+    confirmedForm.url === e.registration_form_url;
   const soon =
     new Date(e.start_time).getTime() - Date.now() < 86400000 &&
     new Date(e.end_time).getTime() > Date.now();
@@ -191,6 +204,43 @@ export default function EventDetails() {
               </strong>{" "}
               slots filled
             </div>
+            {formUrl && !e.cancelled_at && (
+              <div className="event-registration-form">
+                <a
+                  className="button full-width"
+                  href={formUrl.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open {e.registration_form_required ? "required" : "optional"}{" "}
+                  form
+                  <ArrowUpRight size={17} />
+                </a>
+                {e.registration_form_required &&
+                  !registration &&
+                  !closed &&
+                  (profile ? (
+                    <label className="form-confirmation">
+                      <input
+                        type="checkbox"
+                        checked={formConfirmed}
+                        onChange={(event) =>
+                          setConfirmedForm(
+                            event.target.checked
+                              ? { eventId: e.id, url: e.registration_form_url! }
+                              : undefined,
+                          )
+                        }
+                      />
+                      I submitted the event form
+                    </label>
+                  ) : (
+                    <p className="muted small-copy">
+                      Sign in to confirm you submitted the form and register.
+                    </p>
+                  ))}
+              </div>
+            )}
             {e.cancelled_at ? (
               <p className="error-message">This event has been cancelled.</p>
             ) : registration ? (
@@ -235,7 +285,13 @@ export default function EventDetails() {
               </>
             ) : (
               <button
-                disabled={busy || closed}
+                disabled={
+                  busy ||
+                  closed ||
+                  Boolean(
+                    profile && e.registration_form_required && !formConfirmed,
+                  )
+                }
                 className="button primary full-width"
                 onClick={() => {
                   if (!profile) {
@@ -243,7 +299,12 @@ export default function EventDetails() {
                     return;
                   }
                   void act(
-                    () => register(e.id, full),
+                    () =>
+                      register(
+                        e.id,
+                        full,
+                        formConfirmed ? confirmedForm.url : undefined,
+                      ),
                     full
                       ? "You’re on the waitlist."
                       : "You’re registered! Your QR ticket is ready.",

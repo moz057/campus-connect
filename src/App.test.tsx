@@ -210,6 +210,77 @@ describe("organizer demo workflow", () => {
     expect(await screen.findByRole("link", { name: /0 unread/ })).toBeTruthy();
   });
 
+  it("lets a student leader add an optional form and require confirmation before registration", async () => {
+    const url = "https://forms.gle/campus-event";
+    window.history.replaceState({}, "", "/login");
+    render(<App />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Student Leader/ }),
+    );
+    fireEvent.click(
+      await screen.findByRole("link", { name: "Create an event" }),
+    );
+    fireEvent.change(await screen.findByLabelText("Event title"), {
+      target: { value: "Campus form meetup" },
+    });
+    fireEvent.change(screen.getByLabelText("Description"), {
+      target: { value: "A campus event with an external form." },
+    });
+    fireEvent.change(screen.getByLabelText("Venue"), {
+      target: { value: "Campus garden" },
+    });
+    fireEvent.change(
+      screen.getByLabelText(/Registration form link/),
+      {
+        target: { value: url },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Publish event" }));
+    expect(
+      (
+        await screen.findByRole("link", { name: "Open optional form" })
+      ).getAttribute("href"),
+    ).toBe(url);
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Register for event",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(false);
+
+    fireEvent.click(screen.getByRole("link", { name: "Edit event" }));
+    fireEvent.click(
+      await screen.findByRole("checkbox", {
+        name: /Require students to confirm/,
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save event" }));
+    await screen.findByRole("link", { name: "Open required form" });
+    const eventPath = window.location.pathname;
+
+    fireEvent.click(screen.getByRole("link", { name: /Demo Student Leader/ }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Discover & register/ }),
+    );
+    cleanup();
+    window.history.replaceState({}, "", eventPath);
+    render(<App />);
+
+    const register = await screen.findByRole<HTMLButtonElement>("button", {
+      name: "Register for event",
+    });
+    expect(register.disabled).toBe(true);
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "I submitted the event form" }),
+    );
+    expect(register.disabled).toBe(false);
+    fireEvent.click(register);
+    expect(
+      await screen.findByRole("button", { name: "View my QR ticket" }),
+    ).toBeTruthy();
+  });
+
   it("switches demo roles and creates, edits and deletes an event", async () => {
     window.history.replaceState({}, "", "/login");
     render(<App />);

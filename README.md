@@ -28,7 +28,7 @@ campusconnect/
 ## Setup: 1. Create your Supabase project
 
 1. Create a project at https://supabase.com/dashboard in your organization. Choose a suitable database region and a strong database password.
-2. In the SQL Editor, run `supabase/schema.sql` once for a fresh project, then run the organization and leadership migration below. For an existing CampusConnect project, apply only the migration.
+2. In the SQL Editor, run `supabase/schema.sql` once for a fresh project, then apply the files in `supabase/migrations` in filename order. For an existing CampusConnect project, apply only the migrations it has yet to receive.
 3. In **Authentication → Providers**, enable Email/Password. Email confirmation is recommended. Configure an SMTP provider before real student onboarding; Supabase's default email delivery has limits.
 4. In **Authentication → URL Configuration**, set the Site URL to your production origin. Add the full production `/auth/callback` URL and `http://localhost:5173/auth/callback` for local signup tests. Use the actual Vite port.
 5. The SQL creates two public image buckets, `avatars` (2 MB) and `event-banners` (5 MB), with MIME restrictions and upload policies. Never place private documents in these public buckets.
@@ -137,6 +137,10 @@ Existing accounts, roles, events, registrations, attendance, and announcements a
 3. Review student leadership separately. Free-text profile affiliations never grant access. Use **Direct appointment** or approve a nomination. Retain existing admin roles and use the trusted database operation above for initial admin assignments.
 
 Archiving an organization ends its leaders' management access, cancels upcoming events, and preserves event, registration, and attendance records. Students can see their cancelled entries in **My registrations → Cancelled**. Admins can still see archived records and reject unresolved nominations for that organization. Deleting an event is a separate, explicit action that keeps the existing cascading deletion behavior. The browser-only announcement read flags from the earlier version may appear unread once when switching to persistent receipts.
+
+## External event forms
+
+Apply [202611190002_event_registration_forms.sql](supabase/migrations/202611190002_event_registration_forms.sql) after the organization and leadership migration and before deploying the matching frontend. Existing events have no form requirement. Authorized event editors can add an external form link and optionally require students to confirm they submitted it before registering or joining the waitlist. CampusConnect does not receive or verify external form responses.
 
 ## Test the three roles
 

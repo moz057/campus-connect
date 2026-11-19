@@ -38,7 +38,11 @@ interface DataValue extends DataState {
   loading: boolean;
   error: string;
   refresh: () => Promise<void>;
-  register: (id: string, waitlist?: boolean) => Promise<void>;
+  register: (
+    id: string,
+    waitlist?: boolean,
+    confirmedFormUrl?: string,
+  ) => Promise<void>;
   cancel: (id: string) => Promise<void>;
   cancelManagedRegistration: (
     eventId: string,
@@ -296,12 +300,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       ),
     );
   }
-  async function register(id: string, waitlist = false) {
+  async function register(
+    id: string,
+    waitlist = false,
+    confirmedFormUrl?: string,
+  ) {
     const p = requireProfile();
     if (supabase) {
       const { error } = await supabase.rpc("register_for_event", {
         p_event_id: id,
         p_waitlist: waitlist,
+        ...(confirmedFormUrl && { p_confirmed_form_url: confirmedFormUrl }),
       });
       if (error) throw error;
       await Promise.all([refresh(), refreshNotices()]);
@@ -310,6 +319,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const e = events.find((e) => e.id === id);
     if (!e) throw Error("Event not found.");
     if (isClosed(e)) throw Error("Registration has closed.");
+    if (
+      e.registration_form_required &&
+      confirmedFormUrl !== e.registration_form_url
+    )
+      throw Error(
+        "Confirm you submitted the current event form before registering.",
+      );
     if (
       state.registrations.some(
         (r) =>
@@ -459,7 +475,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
       organizations.find((o) => o.id === organizationId)?.archived_at
     )
       throw Error("This organization is archived.");
-    const invalid = validateEvent(event);
+    const formUrl =
+      event.registration_form_url === undefined
+        ? (existing?.registration_form_url ?? null)
+        : event.registration_form_url?.trim() || null;
+    const formRequired =
+      event.registration_form_required ??
+      existing?.registration_form_required ??
+      false;
+    const invalid = validateEvent({
+      ...event,
+      registration_form_url: formUrl,
+      registration_form_required: formRequired,
+    });
     if (invalid) throw Error(invalid);
     if (existing && (event.capacity || 0) < (existing.filled || 0))
       throw Error("Capacity cannot be below confirmed registrations.");
@@ -487,6 +515,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       banner_url,
       capacity,
       registration_deadline,
+      registration_form_url: formUrl,
+      registration_form_required: formRequired,
     };
     if (supabase) {
       const query = event.id

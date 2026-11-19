@@ -91,6 +91,8 @@ export interface CampusEvent {
   banner_url: string;
   capacity: number;
   registration_deadline: string;
+  registration_form_url?: string | null;
+  registration_form_required?: boolean;
   created_by: string | null;
   created_at: string;
   filled?: number;

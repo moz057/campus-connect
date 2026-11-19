@@ -80,6 +80,15 @@ beforeAll(async () => {
       "utf8",
     ),
   );
+  await db.exec(
+    readFileSync(
+      new URL(
+        "./migrations/202611190002_event_registration_forms.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
 }, 30000);
 afterAll(async () => {
   await db.close();
@@ -601,3 +610,54 @@ describe.sequential(
     });
   },
 );
+
+it("requires confirmation of the current event form for both seats and waitlists", async () => {
+  const url = "https://forms.gle/campus-event";
+  await actor(ids.admin);
+  const {
+    rows: [event],
+  } = await db.query<{ id: string }>(
+    `insert into public.events(title,description,category,venue,start_time,end_time,capacity,registration_deadline,created_by,registration_form_url,registration_form_required)
+       values('Campus Form Meetup','A campus event with a form.','Academic','Talamban',now()+interval '2 days',now()+interval '3 days',1,now()+interval '1 day',$1,$2,true)
+       returning id`,
+    [ids.admin, url],
+  );
+  await expect(
+    db.query(
+      "update public.events set registration_form_url=null where id=$1",
+      [event.id],
+    ),
+  ).rejects.toThrow("events_registration_form_required_check");
+  await expect(
+    db.query(
+      "update public.events set registration_form_url='javascript:alert(1)' where id=$1",
+      [event.id],
+    ),
+  ).rejects.toThrow("events_registration_form_url_check");
+  const confirm = (waitlist: boolean, confirmedUrl: string) =>
+    db.query<{ status: string }>(
+      "select status from public.register_for_event($1,$2,$3)",
+      [event.id, waitlist, confirmedUrl],
+    );
+
+  await actor(ids.a);
+  await expect(register(event.id)).rejects.toThrow("Confirm you submitted");
+  await expect(confirm(false, "https://forms.gle/old")).rejects.toThrow(
+    "Confirm you submitted",
+  );
+  expect((await confirm(false, url)).rows[0].status).toBe("registered");
+
+  await actor(ids.b);
+  await expect(register(event.id, true)).rejects.toThrow(
+    "Confirm you submitted",
+  );
+  expect((await confirm(true, url)).rows[0].status).toBe("waitlisted");
+
+  await actor(ids.admin);
+  await db.query(
+    "update public.events set registration_form_required=false where id=$1",
+    [event.id],
+  );
+  await actor(ids.c);
+  expect((await register(event.id, true)).status).toBe("waitlisted");
+});

@@ -38,6 +38,8 @@ function EventEditor() {
     venue: existing?.venue || "",
     banner_url: existing?.banner_url || "",
     capacity: existing?.capacity || 100,
+    registration_form_url: existing?.registration_form_url ?? "",
+    registration_form_required: existing?.registration_form_required ?? false,
     start_time: localInput(existing?.start_time || tomorrow.toISOString()),
     end_time: localInput(
       existing?.end_time ||
@@ -75,6 +77,7 @@ function EventEditor() {
           ? existing.organization
           : "University of San Carlos"),
       venue: form.venue.trim(),
+      registration_form_url: form.registration_form_url.trim() || null,
       start_time: new Date(form.start_time).toISOString(),
       end_time: new Date(form.end_time).toISOString(),
       registration_deadline: new Date(form.registration_deadline).toISOString(),
@@ -269,6 +272,42 @@ function EventEditor() {
                   />
                 </Field>
               </div>
+              <Field
+                label="Registration form link (optional)"
+                hint="Paste the link students use to fill out your Google Form or other external form."
+              >
+                <input
+                  type="url"
+                  maxLength={2048}
+                  value={form.registration_form_url}
+                  onChange={(e) => {
+                    const link = e.target.value;
+                    setForm((current) => ({
+                      ...current,
+                      registration_form_url: link,
+                      registration_form_required:
+                        Boolean(link.trim()) &&
+                        current.registration_form_required,
+                    }));
+                  }}
+                  placeholder="https://forms.gle/..."
+                />
+              </Field>
+              <label className="form-confirmation">
+                <input
+                  type="checkbox"
+                  checked={form.registration_form_required}
+                  disabled={!form.registration_form_url.trim()}
+                  onChange={(e) => {
+                    const required = e.target.checked;
+                    setForm((current) => ({
+                      ...current,
+                      registration_form_required: required,
+                    }));
+                  }}
+                />
+                Require students to confirm they submitted the form
+              </label>
               <div className="info-note">
                 When the event fills up, students can join a waitlist. Cancelled
                 spots go to the next student in line before the deadline.

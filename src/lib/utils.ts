@@ -19,6 +19,20 @@ export const initials = (name: string) =>
     .map((n) => n[0])
     .slice(0, 2)
     .join("");
+export function parseRegistrationFormUrl(value: string | null | undefined) {
+  if (
+    !value ||
+    value.length > 2048 ||
+    !/^https?:\/\/[^\s/?#]+[^\s]*$/i.test(value)
+  )
+    return null;
+  try {
+    const url = new URL(value);
+    return url.username || url.password ? null : url;
+  } catch {
+    return null;
+  }
+}
 export function validateEvent(e: Partial<CampusEvent>): string | null {
   if (!e.title || e.title.trim().length < 3)
     return "Enter an event title with at least 3 characters.";
@@ -26,6 +40,11 @@ export function validateEvent(e: Partial<CampusEvent>): string | null {
     return "Describe the event in at least 10 characters.";
   if (!e.venue?.trim() || !e.organization?.trim())
     return "Venue and organizing group are required.";
+  const formUrl = e.registration_form_url?.trim();
+  if (e.registration_form_required && !formUrl)
+    return "Add a form link before requiring it for registration.";
+  if (formUrl && !parseRegistrationFormUrl(formUrl))
+    return "Enter a valid HTTP or HTTPS form link.";
   if (
     !e.start_time ||
     !e.end_time ||
