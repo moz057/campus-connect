@@ -38,6 +38,28 @@ describe("email confirmation redirects", () => {
 });
 
 describe("student workflows in the browser demo", () => {
+  it("opens account options before editing a profile or logging out", async () => {
+    render(<App />);
+    const account = screen.getByRole("button", { name: "Account options" });
+    fireEvent.click(account);
+    expect(window.location.pathname).toBe("/events");
+    expect(account.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.keyDown(account, { key: "Escape" });
+    expect(screen.queryByRole("link", { name: "Edit profile" })).toBeNull();
+    expect(document.activeElement).toBe(account);
+    fireEvent.click(account);
+    fireEvent.click(screen.getByRole("link", { name: "Edit profile" }));
+    await screen.findByLabelText("Full name");
+    expect(window.location.pathname).toBe("/profile");
+
+    fireEvent.click(screen.getByRole("button", { name: "Account options" }));
+    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+    expect(
+      await screen.findByRole("heading", { name: "Welcome back." }),
+    ).toBeTruthy();
+    expect(window.location.pathname).toBe("/login");
+  });
+
   it("searches and filters upcoming events", async () => {
     render(<App />);
     expect(

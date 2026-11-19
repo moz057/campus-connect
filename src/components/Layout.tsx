@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Link,
   NavLink,
@@ -21,6 +21,7 @@ import {
   Menu,
   X,
   LogOut,
+  UserRoundPen,
   Users,
   Code2,
   HeartHandshake,
@@ -36,8 +37,49 @@ export default function Layout() {
   const notify = useToast();
   const [mobile, setMobile] = useState(false);
   const [query, setQuery] = useState("");
+  const [accountMenuKey, setAccountMenuKey] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const accountMenu = useRef<HTMLDivElement>(null);
+  const accountTrigger = useRef<HTMLButtonElement>(null);
   const location = useLocation(),
     navigate = useNavigate();
+  const accountMenuOpen = Boolean(profile) && accountMenuKey === location.key;
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    function closeOnOutsideClick(event: PointerEvent) {
+      if (
+        event.target instanceof Node &&
+        !accountMenu.current?.contains(event.target)
+      ) {
+        setAccountMenuKey(null);
+      }
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setAccountMenuKey(null);
+        accountTrigger.current?.focus();
+      }
+    }
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [accountMenuOpen]);
+
+  async function logOut() {
+    setSigningOut(true);
+    try {
+      await signOut();
+      setAccountMenuKey(null);
+      navigate("/login", { replace: true });
+    } catch (e) {
+      notify((e as Error).message, true);
+    } finally {
+      setSigningOut(false);
+    }
+  }
   const links = [
     { to: "/events", label: "Discover events", icon: Compass },
     { to: "/calendar", label: "Event calendar", icon: CalendarDays },
@@ -215,6 +257,49 @@ export default function Layout() {
             >
               <Menu size={22} />
             </button>
+            {profile && (
+              <div className="account-menu" ref={accountMenu}>
+                <button
+                  type="button"
+                  className="header-profile"
+                  ref={accountTrigger}
+                  aria-label="Account options"
+                  aria-expanded={accountMenuOpen}
+                  aria-controls="account-options"
+                  onClick={() =>
+                    setAccountMenuKey(accountMenuOpen ? null : location.key)
+                  }
+                >
+                  <span className="avatar small">
+                    {profile.avatar_url ? (
+                      <img src={profile.avatar_url} alt="" />
+                    ) : (
+                      initials(profile.full_name)
+                    )}
+                  </span>
+                  <ChevronDown size={13} aria-hidden="true" />
+                </button>
+                <div
+                  className="account-options"
+                  id="account-options"
+                  hidden={!accountMenuOpen}
+                >
+                  <Link to="/profile" onClick={() => setAccountMenuKey(null)}>
+                    <UserRoundPen size={16} aria-hidden="true" />
+                    Edit profile
+                  </Link>
+                  <button
+                    type="button"
+                    className="account-logout"
+                    disabled={signingOut}
+                    onClick={logOut}
+                  >
+                    <LogOut size={16} aria-hidden="true" />
+                    {signingOut ? "Logging out…" : "Log out"}
+                  </button>
+                </div>
+              </div>
+            )}
             <span>My campus</span>
             <span className="breadcrumb-divider">/</span>
             <strong>{section}</strong>
@@ -253,18 +338,7 @@ export default function Layout() {
               <Bell size={20} />
               {unread > 0 && <i />}
             </Link>
-            {profile ? (
-              <Link to="/profile" className="header-profile">
-                <span className="avatar small">
-                  {profile.avatar_url ? (
-                    <img src={profile.avatar_url} alt="" />
-                  ) : (
-                    initials(profile.full_name)
-                  )}
-                </span>
-                <ChevronDown size={13} />
-              </Link>
-            ) : (
+            {!profile && (
               <Link className="button primary small-button" to="/login">
                 Log in
               </Link>
@@ -285,20 +359,6 @@ export default function Layout() {
           <span>
             CampusConnect <i /> University of San Carlos
           </span>
-          {profile && (
-            <button
-              onClick={async () => {
-                try {
-                  await signOut();
-                  navigate("/login");
-                } catch (e) {
-                  notify((e as Error).message, true);
-                }
-              }}
-            >
-              <LogOut size={13} /> Log out
-            </button>
-          )}
         </footer>
       </div>
     </div>

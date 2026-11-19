@@ -449,11 +449,52 @@ a:focus-visible {
   right: 7px;
   border: 1px solid white;
 }
+.account-menu {
+  position: relative;
+}
 .header-profile {
   display: flex;
   gap: 8px;
   align-items: center;
   color: #7b8675;
+  padding: 4px;
+  border-radius: 8px;
+}
+.header-profile:hover,
+.header-profile[aria-expanded="true"] {
+  background: #edf1e9;
+}
+.account-options {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 156px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 24px #182f2024;
+}
+.account-options > :is(a, button) {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #46533e;
+}
+.account-options > a:hover {
+  background: #edf1e9;
+}
+.account-options > .account-logout {
+  margin-top: 3px;
+  background: #fdf0ef;
+  color: #a52121;
+}
+.account-options > .account-logout:hover {
+  background: #fbe2df;
 }
 .avatar {
   border-radius: 50%;
@@ -503,13 +544,6 @@ a:focus-visible {
   height: 3px;
   border-radius: 50%;
   background: #a8b19f;
-}
-.site-footer button {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  color: #7a8774;
 }
 .mobile-menu,
 .mobile-close {
@@ -2385,6 +2419,9 @@ a:focus-visible {
 }
 .auth-form-wrap .field {
   margin-bottom: 20px;
+}
+.auth-form-wrap .resend-confirmation {
+  margin-top: 8px;
 }
 .password-input {
   display: flex !important;
@@ -4997,9 +5034,6 @@ tr:hover td {
   .site-footer {
     font-size: 8px;
     padding: 25px 18px 20px;
-  }
-  .site-footer button {
-    font-size: 9px;
   }
   .toast {
     padding: 13px 15px;

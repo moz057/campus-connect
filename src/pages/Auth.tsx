@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Field, ErrorMessage, Loading } from "../components/Common";
+import { isAuthApiError } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 
 type AuthLocationState = {
@@ -47,7 +48,8 @@ export default function Auth() {
     [show, setShow] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [success, setSuccess] = useState("");
+    [success, setSuccess] = useState(""),
+    [unconfirmedEmail, setUnconfirmedEmail] = useState("");
   const destination = authState?.from || "/events";
   const confirmationError = authState?.confirmationError;
   useEffect(() => {
@@ -114,6 +116,7 @@ export default function Auth() {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setUnconfirmedEmail("");
     if (password.length < 8) {
       setError("Use a password with at least 8 characters.");
       return;
@@ -137,6 +140,9 @@ export default function Auth() {
           navigate("/login", { replace: true, state: { from: destination } });
       }
     } catch (e) {
+      if (!signup && isAuthApiError(e) && e.code === "email_not_confirmed") {
+        setUnconfirmedEmail(email.trim());
+      }
       setError((e as Error).message);
     } finally {
       setBusy(false);
@@ -264,16 +270,19 @@ export default function Auth() {
               {busy ? "Please wait…" : signup ? "Create account" : "Log in"}
               <ArrowRight size={17} />
             </button>
-            {!signup && !demo && (
-              <button
-                type="button"
-                className="button full-width"
-                disabled={busy}
-                onClick={requestConfirmation}
-              >
-                Resend confirmation email
-              </button>
-            )}
+            {!signup &&
+              !demo &&
+              (confirmationError ||
+                (unconfirmedEmail && unconfirmedEmail === email.trim())) && (
+                <button
+                  type="button"
+                  className="button full-width resend-confirmation"
+                  disabled={busy}
+                  onClick={requestConfirmation}
+                >
+                  Resend confirmation email
+                </button>
+              )}
           </form>
           <p className="auth-switch">
             {signup ? "Already a Carolinian here?" : "New to CampusConnect?"}{" "}
@@ -283,6 +292,7 @@ export default function Auth() {
               onClick={() => {
                 setError("");
                 setSuccess("");
+                setUnconfirmedEmail("");
               }}
             >
               {signup ? "Log in" : "Create an account"}
