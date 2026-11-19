@@ -140,20 +140,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
   async function saveProfile(p: Partial<Profile>) {
     if (!profile) throw Error("Please log in.");
-    const {
-      full_name,
-      student_id,
-      course,
-      year_level,
-      organization,
-      avatar_url,
-    } = p;
+    const { full_name, student_id, course, year_level, avatar_url } = p;
     const safe = {
       full_name,
       student_id,
       course,
       year_level,
-      organization,
       avatar_url,
     };
     if (supabase) {

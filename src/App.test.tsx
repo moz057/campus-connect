@@ -136,6 +136,49 @@ describe("student workflows in the browser demo", () => {
   });
 });
 describe("organizer demo workflow", () => {
+  it("lets a student request membership and a student leader approve it", async () => {
+    window.history.replaceState({}, "", "/organizations/cis");
+    render(<App />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Request to join" }),
+    );
+    expect(await screen.findByText("Membership request pending")).toBeTruthy();
+
+    cleanup();
+    window.history.replaceState({}, "", "/login");
+    render(<App />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Student Leader/ }),
+    );
+    fireEvent.click(await screen.findByRole("link", { name: "Leadership" }));
+    expect(
+      await screen.findByRole("heading", { name: "Alex Rivera" }),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Approve membership" }));
+    expect(
+      await screen.findByText("No pending membership requests."),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("link", { name: /Demo Student Leader/ }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Discover & register/ }),
+    );
+    cleanup();
+    window.history.replaceState({}, "", "/profile");
+    render(<App />);
+    expect(
+      await screen.findByRole("heading", { name: "My organizations" }),
+    ).toBeTruthy();
+    expect(
+      await screen.findByRole("link", {
+        name: "Computer and Information Sciences Council",
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.queryByPlaceholderText("Your student organization (optional)"),
+    ).toBeNull();
+  });
+
   it("nominates within the leader's organization and shows the admin decision to the nominee", async () => {
     window.history.replaceState({}, "", "/login");
     render(<App />);

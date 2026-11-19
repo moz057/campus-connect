@@ -76,7 +76,7 @@ where p.id = u.id and lower(u.email) = lower('organizer@usc.edu.ph');
 3. Log out and back in (or refresh) to load the updated role.
 4. Open `/admin` to create the first event. Optionally run `supabase/seed.sql` for sample events first. The seed does not create users or assign roles.
 
-Only a trusted database administrator can assign university admin access. Signup creates a student profile. University admins manage organization leadership from **Manage organizations**.
+Only a trusted database administrator can assign university admin access. Signup creates a student profile. Replace the example with the exact verified email of the intended account. After reloading the app, the user can open **Manage organizations**. University admins assign active leadership terms for individual organizations there.
 
 ## Features, in implementation order
 
@@ -141,6 +141,12 @@ Archiving an organization ends its leaders' management access, cancels upcoming 
 ## External event forms
 
 Apply [202611190002_event_registration_forms.sql](supabase/migrations/202611190002_event_registration_forms.sql) after the organization and leadership migration and before deploying the matching frontend. Existing events have no form requirement. Authorized event editors can add an external form link and optionally require students to confirm they submitted it before registering or joining the waitlist. CampusConnect does not receive or verify external form responses.
+
+## Organization membership requests
+
+Apply [202611190003_organization_join_requests.sql](supabase/migrations/202611190003_organization_join_requests.sql) after the event forms migration and before deploying the matching frontend. Students open an organization and select **Request to join**. Its active leaders can approve or decline the request under **Leadership**, under **Membership requests**. University admins can also review requests in **Manage organizations**. On approval the organization appears on the student's profile. Existing membership rows are preserved; legacy profile text grants no membership.
+
+To populate a presentation project with sample content, run [demo_seed.sql](supabase/demo_seed.sql) after the organization and leadership migration. It adds three sample organizations, six upcoming events, and one announcement. Records are labeled DEMO and identified by fixed IDs. The script can be rerun without duplicating its records and creates no accounts or registrations.
 
 ## Test the three roles
 

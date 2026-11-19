@@ -89,6 +89,15 @@ beforeAll(async () => {
       "utf8",
     ),
   );
+  await db.exec(
+    readFileSync(
+      new URL(
+        "./migrations/202611190003_organization_join_requests.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
 }, 30000);
 afterAll(async () => {
   await db.close();
@@ -660,4 +669,158 @@ it("requires confirmation of the current event form for both seats and waitlists
   );
   await actor(ids.c);
   expect((await register(event.id, true)).status).toBe("waitlisted");
+});
+
+it("keeps organization requests private until a scoped reviewer decides them", async () => {
+  const applicant = "00000000-0000-4000-8000-000000000005";
+  await db.exec("reset role");
+  await db.query(
+    "insert into auth.users(id,email,raw_user_meta_data) values($1,$2,$3)",
+    [
+      applicant,
+      "requester@example.test",
+      JSON.stringify({
+        full_name: "Join Test Student",
+        student_id: "join-test",
+        organization: "Fake",
+      }),
+    ],
+  );
+  expect(
+    (
+      await db.query("select organization from public.profiles where id=$1", [
+        applicant,
+      ])
+    ).rows[0],
+  ).toMatchObject({ organization: "" });
+  await actor(ids.admin);
+  const {
+    rows: [org],
+  } = await db.query<{ id: string }>(
+    "select id from public.save_organization(null,'Membership Test Organization','','','')",
+  );
+  await db.query(
+    "select public.appoint_leader($1,$2,'President',current_date-1,current_date+2)",
+    [org.id, ids.a],
+  );
+
+  await actor(applicant);
+  await expect(
+    db.query("update public.profiles set organization='Fake' where id=$1", [
+      applicant,
+    ]),
+  ).rejects.toThrow("permission denied");
+  await db.query("select public.request_organization_membership($1)", [org.id]);
+  await db.query("select public.request_organization_membership($1)", [org.id]);
+  const {
+    rows: [request],
+  } = await db.query<{ id: string; status: string }>(
+    "select * from public.list_organization_join_requests()",
+  );
+  expect(request.status).toBe("pending");
+  expect(
+    (await db.query("select * from public.organization_memberships")).rows,
+  ).toHaveLength(0);
+  await expect(
+    db.query("update public.organization_join_requests set status='approved'"),
+  ).rejects.toThrow("permission denied");
+
+  await actor(ids.b);
+  expect(
+    (await db.query("select * from public.list_organization_join_requests()"))
+      .rows,
+  ).toHaveLength(0);
+  await expect(
+    db.query("select public.review_organization_join_request($1,true)", [
+      request.id,
+    ]),
+  ).rejects.toThrow("Active leadership");
+  await actor(ids.a);
+  expect(
+    (await db.query("select * from public.list_organization_join_requests()"))
+      .rows[0],
+  ).toMatchObject({
+    id: request.id,
+    applicant_name: "Join Test Student",
+    applicant_student_id: "join-test",
+  });
+  await db.query("select public.review_organization_join_request($1,false)", [
+    request.id,
+  ]);
+  await actor(applicant);
+  expect(
+    (
+      await db.query(
+        "select status from public.list_organization_join_requests()",
+      )
+    ).rows,
+  ).toEqual([{ status: "rejected" }]);
+  await db.query("select public.request_organization_membership($1)", [org.id]);
+
+  await actor(ids.a);
+  await db.query("select public.review_organization_join_request($1,true)", [
+    request.id,
+  ]);
+  await expect(
+    db.query("select public.review_organization_join_request($1,true)", [
+      request.id,
+    ]),
+  ).rejects.toThrow("already been decided");
+  await actor(applicant);
+  expect(
+    (
+      await db.query(
+        "select organization_id,role from public.organization_memberships",
+      )
+    ).rows,
+  ).toEqual([{ organization_id: org.id, role: "member" }]);
+  expect(
+    (
+      await db.query(
+        "select status from public.list_organization_join_requests()",
+      )
+    ).rows,
+  ).toEqual([{ status: "approved" }]);
+  expect(
+    (
+      await db.query(
+        "select type from public.notifications where type='organization_join_approved'",
+      )
+    ).rows,
+  ).toHaveLength(1);
+});
+
+it("seeds presentation data without duplicating or replacing existing records", async () => {
+  await db.exec("reset role");
+  const seed = readFileSync(
+    new URL("./demo_seed.sql", import.meta.url),
+    "utf8",
+  );
+  await db.exec(seed);
+  await db.exec(seed);
+  expect(
+    (
+      await db.query(
+        "select id from public.organizations where name like 'DEMO:%'",
+      )
+    ).rows,
+  ).toHaveLength(3);
+  expect(
+    (
+      await db.query(
+        "select id from public.events where title like 'DEMO:%' and organization_id is not null and registration_deadline > now()",
+      )
+    ).rows,
+  ).toHaveLength(6);
+  expect(
+    (
+      await db.query(
+        "select id from public.announcements where title like 'DEMO:%'",
+      )
+    ).rows,
+  ).toHaveLength(1);
+  expect(
+    (await db.query("select id from public.events where id=$1", [ids.event]))
+      .rows,
+  ).toHaveLength(1);
 });

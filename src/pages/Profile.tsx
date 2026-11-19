@@ -1,12 +1,28 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Camera, Save, UserRound, ShieldCheck } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
+import { useOrganizations } from "../contexts/OrganizationContext";
 import { initials } from "../lib/utils";
 import { uploadImage } from "../lib/upload";
 import { PageTitle, Field, ErrorMessage } from "../components/Common";
 export default function Profile() {
   const { profile, saveProfile, demo } = useAuth();
+  const {
+    organizations,
+    memberships,
+    loading: organizationsLoading,
+  } = useOrganizations();
+  const myOrganizations = organizations.filter(
+    (organization) =>
+      !organization.archived_at &&
+      memberships.some(
+        (membership) =>
+          membership.organization_id === organization.id &&
+          membership.student_id === profile?.id,
+      ),
+  );
   const notify = useToast();
   const [form, setForm] = useState({ ...profile! }),
     [busy, setBusy] = useState(false),
@@ -121,16 +137,6 @@ export default function Profile() {
                 </select>
               </Field>
               <div className="span-two">
-                <Field label="Organization">
-                  <input
-                    maxLength={160}
-                    value={form.organization}
-                    onChange={(e) => set("organization", e.target.value)}
-                    placeholder="Your student organization (optional)"
-                  />
-                </Field>
-              </div>
-              <div className="span-two">
                 <Field
                   label="Profile photo"
                   hint="JPG, PNG, or WebP · Up to 2 MB (500 KB in demo)"
@@ -175,6 +181,35 @@ export default function Profile() {
               </button>
             </div>
           </form>
+          {profile?.role === "student" && (
+            <section aria-labelledby="profile-memberships">
+              <div className="profile-summary-divider" />
+              <h2 id="profile-memberships" className="workflow-heading">
+                My organizations
+              </h2>
+              {organizationsLoading ? (
+                <p>Loading memberships...</p>
+              ) : myOrganizations.length ? (
+                <ul>
+                  {myOrganizations.map((organization) => (
+                    <li key={organization.id}>
+                      <Link
+                        to={"/organizations/" + organization.id}
+                        className="text-link"
+                      >
+                        {organization.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No approved memberships yet.</p>
+              )}
+              <Link to="/organizations" className="text-link">
+                Browse organizations
+              </Link>
+            </section>
+          )}
         </section>
       </div>
     </>

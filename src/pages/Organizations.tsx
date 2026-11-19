@@ -52,11 +52,138 @@ function OrganizationLogo({ organization }: { organization: Organization }) {
   );
 }
 
+function JoinOrganization({ organization }: { organization: Organization }) {
+  const { profile } = useAuth();
+  const { memberships, joinRequests, requestMembership } = useOrganizations();
+  const { run, busy, error } = useAction();
+  if (organization.archived_at || profile?.role === "admin") return null;
+  if (!profile)
+    return (
+      <Link
+        className="button"
+        to="/login"
+        state={{ from: "/organizations/" + organization.id }}
+      >
+        Sign in to request membership
+      </Link>
+    );
+  if (
+    memberships.some(
+      (m) =>
+        m.organization_id === organization.id && m.student_id === profile.id,
+    )
+  )
+    return (
+      <div className="workflow-actions">
+        <span className="success-badge">Member</span>
+        <Link to="/leadership" className="text-link">
+          View my memberships
+        </Link>
+      </div>
+    );
+  const request = joinRequests.find(
+    (item) =>
+      item.organization_id === organization.id &&
+      item.applicant_id === profile.id,
+  );
+  if (request?.status === "pending")
+    return <p role="status">Membership request pending</p>;
+  return (
+    <div>
+      {request?.status === "rejected" && (
+        <p>Your last membership request was declined.</p>
+      )}
+      <ErrorMessage message={error} />
+      <button
+        type="button"
+        className="button primary"
+        disabled={busy}
+        onClick={() =>
+          void run(
+            () => requestMembership(organization.id),
+            "Membership request sent.",
+          )
+        }
+      >
+        {request?.status === "rejected"
+          ? "Request to join again"
+          : "Request to join"}
+      </button>
+    </div>
+  );
+}
+
+function MembershipReview() {
+  const { organizations, joinRequests, canManage, reviewMembership } =
+    useOrganizations();
+  const { run, busy, error } = useAction();
+  const pending = joinRequests
+    .filter(
+      (item) =>
+        item.status === "pending" &&
+        canManage(item.organization_id) &&
+        organizations.some(
+          (org) => org.id === item.organization_id && !org.archived_at,
+        ),
+    )
+    .sort((a, b) => a.requested_at.localeCompare(b.requested_at));
+
+  return (
+    <section
+      className="panel organization-card"
+      aria-labelledby="membership-review"
+    >
+      <h2 id="membership-review">Membership requests</h2>
+      <ErrorMessage message={error} />
+      {pending.length === 0 && <p>No pending membership requests.</p>}
+      {pending.map((item) => (
+        <article className="panel organization-card" key={item.id}>
+          <h3>{item.applicant_name || "Student"}</h3>
+          {item.applicant_student_id && (
+            <p>Student ID {item.applicant_student_id}</p>
+          )}
+          <p>
+            {organizations.find((org) => org.id === item.organization_id)?.name}
+          </p>
+          <p>Requested {dateLabel(item.requested_at)}</p>
+          <div className="workflow-actions">
+            <button
+              type="button"
+              className="button primary"
+              disabled={busy}
+              onClick={() =>
+                void run(
+                  () => reviewMembership(item.id, true),
+                  "Membership approved.",
+                )
+              }
+            >
+              Approve membership
+            </button>
+            <button
+              type="button"
+              className="button subtle"
+              disabled={busy}
+              onClick={() =>
+                void run(
+                  () => reviewMembership(item.id, false),
+                  "Membership request declined.",
+                )
+              }
+            >
+              Decline request
+            </button>
+          </div>
+        </article>
+      ))}
+    </section>
+  );
+}
+
 export function OrganizationDirectory() {
   const { id } = useParams();
-  const { organizations, memberships, loading, error } = useOrganizations();
+  const { organizations, loading, error } = useOrganizations();
   const { events } = useData();
-  const { profile } = useAuth();
   if (loading) return <Loading />;
   if (error) return <ErrorMessage message={error} />;
   if (id) {
@@ -67,9 +194,6 @@ export function OrganizationDirectory() {
         event.organization_id === id &&
         !event.cancelled_at &&
         Date.parse(event.end_time) > Date.now(),
-    );
-    const membership = memberships.find(
-      (m) => m.organization_id === id && m.student_id === profile?.id,
     );
     return (
       <>
@@ -100,11 +224,7 @@ export function OrganizationDirectory() {
               remain available.
             </p>
           )}
-          {membership && (
-            <Link to="/leadership" className="text-link">
-              View my membership and leadership activity
-            </Link>
-          )}
+          <JoinOrganization key={organization.id} organization={organization} />
         </section>
         {upcoming.length > 0 && (
           <section className="panel organization-card">
@@ -633,6 +753,7 @@ export function OrganizationAdmin() {
       <div className="page-tabs">
         {[
           ["organizations", "Organizations"],
+          ["memberships", "Membership requests"],
           ["nominations", "Nomination review"],
           ["history", "Leadership history"],
         ].map(([id, title]) => (
@@ -649,6 +770,8 @@ export function OrganizationAdmin() {
       </div>
       {loading ? (
         <Loading />
+      ) : tab === "memberships" ? (
+        <MembershipReview />
       ) : tab === "nominations" ? (
         <NominationList reviewable />
       ) : tab === "history" ? (
@@ -896,6 +1019,7 @@ export function Leadership() {
           />
         </section>
       )}
+      {leading.length > 0 && <MembershipReview />}
       <h2 className="workflow-heading">Nominations</h2>
       <NominationList />
     </>

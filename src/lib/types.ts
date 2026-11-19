@@ -29,6 +29,15 @@ export interface Membership extends Omit<
   term_end: string | null;
   revoked_at: string | null;
 }
+export interface OrganizationJoinRequest {
+  id: string;
+  organization_id: string;
+  applicant_id: string;
+  applicant_name: string;
+  applicant_student_id: string | null;
+  status: "pending" | "approved" | "rejected";
+  requested_at: string;
+}
 export interface Nomination extends Omit<LeadershipTerm, "student_id"> {
   id: string;
   nominee_id: string;

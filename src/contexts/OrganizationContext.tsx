@@ -21,6 +21,7 @@ import type {
   Membership,
   Nomination,
   Organization,
+  OrganizationJoinRequest,
   StudentSummary,
 } from "../lib/types";
 
@@ -32,6 +33,7 @@ type NoticeDraft = Omit<CampusNotification, "id" | "created_at" | "read_at">;
 interface Directory {
   organizations: Organization[];
   memberships: Membership[];
+  joinRequests: OrganizationJoinRequest[];
   nominations: Nomination[];
   history: LeadershipHistory[];
   leadershipPeople: StudentSummary[];
@@ -41,6 +43,7 @@ interface Directory {
 const empty: Directory = {
   organizations: [],
   memberships: [],
+  joinRequests: [],
   nominations: [],
   history: [],
   leadershipPeople: [],
@@ -55,6 +58,16 @@ export const campusDate = () =>
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
+function isActiveLeader(membership: Membership, today: string) {
+  return (
+    membership.role === "leader" &&
+    !membership.revoked_at &&
+    membership.term_start !== null &&
+    membership.term_end !== null &&
+    membership.term_start <= today &&
+    membership.term_end >= today
+  );
+}
 function dateIn(days: number) {
   const date = new Date(campusDate() + "T12:00:00Z");
   date.setUTCDate(date.getUTCDate() + days);
@@ -63,7 +76,7 @@ function dateIn(days: number) {
 function demoDirectory(): Directory {
   try {
     const saved = localStorage.getItem(demoKey);
-    if (saved) return JSON.parse(saved);
+    if (saved) return { ...empty, ...JSON.parse(saved) };
   } catch {
     // Use fresh sample records if browser storage is unavailable.
   }
@@ -165,6 +178,8 @@ interface OrganizationValue extends Directory {
   ) => Promise<void>;
   archiveOrganization: (id: string) => Promise<void>;
   findStudents: (id: string, query: string) => Promise<StudentSummary[]>;
+  requestMembership: (organization: string) => Promise<void>;
+  reviewMembership: (request: string, approve: boolean) => Promise<void>;
   appoint: (term: LeadershipTerm) => Promise<void>;
   revoke: (id: string, student: string) => Promise<void>;
   nominate: (term: LeadershipTerm, explanation: string) => Promise<void>;
@@ -206,6 +221,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       const [
         organizations,
         memberships,
+        joinRequests,
         nominations,
         history,
         leadershipPeople,
@@ -214,6 +230,14 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       ] = await Promise.all([
         rows<Organization>("organizations"),
         user ? rows<Membership>("organization_memberships") : [],
+        user
+          ? readPages<OrganizationJoinRequest>((from, to) =>
+              client
+                .rpc("list_organization_join_requests")
+                .order("id")
+                .range(from, to),
+            )
+          : [],
         user ? rows<Nomination>("leadership_nominations") : [],
         admin ? rows<LeadershipHistory>("leadership_history") : [],
         user
@@ -230,6 +254,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         setDirectory({
           organizations,
           memberships,
+          joinRequests,
           nominations,
           history,
           leadershipPeople,
@@ -276,12 +301,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       (m) =>
         m.organization_id === org.id &&
         m.student_id === user &&
-        m.role === "leader" &&
-        !m.revoked_at &&
-        m.term_start &&
-        m.term_end &&
-        m.term_start <= today &&
-        m.term_end >= today,
+        isActiveLeader(m, today),
     ),
   );
   const manageable = admin ? active : leading;
@@ -498,6 +518,126 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       )
       .slice(0, 20);
   }
+  async function requestMembership(id: string) {
+    if (profile?.role !== "student")
+      throw Error("A student account is required to join an organization.");
+    if (supabase) {
+      await call("request_organization_membership", { p_org: id });
+      await refresh();
+      return;
+    }
+    const organization = active.find((item) => item.id === id);
+    if (!organization) throw Error("This organization is unavailable.");
+    if (
+      data.memberships.some(
+        (m) => m.organization_id === id && m.student_id === user,
+      )
+    )
+      throw Error("You already belong to this organization.");
+    const updated: OrganizationJoinRequest = {
+      id: crypto.randomUUID(),
+      organization_id: id,
+      applicant_id: user,
+      applicant_name: profile.full_name,
+      applicant_student_id: profile.student_id,
+      status: "pending",
+      requested_at: new Date().toISOString(),
+    };
+    setDirectory((state) => {
+      const previous = state.joinRequests.find(
+        (item) => item.organization_id === id && item.applicant_id === user,
+      );
+      if (previous && previous.status !== "rejected") return state;
+      const notices = state.memberships
+        .filter((m) => m.organization_id === id && isActiveLeader(m, today))
+        .map((m) =>
+          createNotice({
+            ...orgNotice(
+              m.student_id,
+              id,
+              "organization_join_requested",
+              "New organization join request",
+              organization.name,
+            ),
+            destination: "/leadership",
+          }),
+        );
+      return {
+        ...state,
+        joinRequests: [
+          ...state.joinRequests.filter((item) => item.id !== previous?.id),
+          { ...updated, id: previous?.id ?? updated.id },
+        ],
+        notifications: [...state.notifications, ...notices],
+      };
+    });
+  }
+
+  async function reviewMembership(id: string, approve: boolean) {
+    if (supabase) {
+      await call("review_organization_join_request", {
+        p_request: id,
+        p_approve: approve,
+      });
+      await refresh();
+      return;
+    }
+    const pending = data.joinRequests.find((item) => item.id === id);
+    const organization = manageable.find(
+      (item) => item.id === pending?.organization_id,
+    );
+    if (!organization)
+      throw Error(
+        "Active leadership or university admin access for this organization is required.",
+      );
+    if (!pending || pending.status !== "pending")
+      throw Error("This request has already been decided.");
+    const status = approve ? "approved" : "rejected";
+    const member: Membership = {
+      id: crypto.randomUUID(),
+      organization_id: organization.id,
+      student_id: pending.applicant_id,
+      role: "member",
+      position: null,
+      term_start: null,
+      term_end: null,
+      revoked_at: null,
+    };
+    const notice = createNotice(
+      orgNotice(
+        member.student_id,
+        organization.id,
+        approve ? "organization_join_approved" : "organization_join_rejected",
+        approve
+          ? "Organization join request approved"
+          : "Organization join request declined",
+        organization.name,
+      ),
+    );
+    setDirectory((state) => {
+      if (
+        state.joinRequests.find((item) => item.id === id)?.status !== "pending"
+      )
+        return state;
+      const alreadyMember = state.memberships.some(
+        (m) =>
+          m.organization_id === organization.id &&
+          m.student_id === member.student_id,
+      );
+      return {
+        ...state,
+        memberships:
+          approve && !alreadyMember
+            ? [...state.memberships, member]
+            : state.memberships,
+        joinRequests: state.joinRequests.map((item) =>
+          item.id === id ? { ...item, status } : item,
+        ),
+        notifications: [...state.notifications, notice],
+      };
+    });
+  }
+
   async function appoint(term: LeadershipTerm) {
     if (!admin) throw Error("University admin access required.");
     if (supabase) {
@@ -765,6 +905,10 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         memberships: admin
           ? data.memberships
           : data.memberships.filter((m) => m.student_id === user),
+        joinRequests: data.joinRequests.filter(
+          (item) =>
+            item.applicant_id === user || canManage(item.organization_id),
+        ),
         nominations: admin
           ? data.nominations
           : data.nominations.filter(
@@ -790,6 +934,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         saveOrganization,
         archiveOrganization,
         findStudents,
+        requestMembership,
+        reviewMembership,
         appoint,
         revoke,
         nominate,
