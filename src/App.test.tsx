@@ -66,6 +66,9 @@ describe("student workflows in the browser demo", () => {
     expect(
       screen.getByRole("heading", { name: /Find your next thing/ }),
     ).toBeTruthy();
+    expect(
+      screen.getByText("Demo mode · Sample events and registrations"),
+    ).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Search events"), {
       target: { value: "basketball" },
     });
@@ -81,13 +84,79 @@ describe("student workflows in the browser demo", () => {
     expect(
       screen.getByRole("heading", { name: "No events found" }),
     ).toBeTruthy();
+    expect(screen.getByText("0 matching events").getAttribute("role")).toBe(
+      "status",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(document.activeElement).toBe(
+      screen.getByRole("textbox", { name: "Search events" }),
+    );
+    expect(
+      screen.getByRole("link", { name: demoEvents[0].title }),
+    ).toBeTruthy();
   });
+
+  it("restores the discovery query and category after viewing an event", async () => {
+    render(<App />);
+    fireEvent.change(screen.getByRole("textbox", { name: "Search events" }), {
+      target: { value: "Tech Summit" },
+    });
+    const technology = screen.getByRole("button", { name: "Technology" });
+    fireEvent.click(technology);
+    expect(technology.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText("1 matching event").getAttribute("aria-live")).toBe(
+      "polite",
+    );
+    fireEvent.click(screen.getByRole("link", { name: demoEvents[0].title }));
+    fireEvent.click(
+      await screen.findByRole("link", { name: "Back to events" }),
+    );
+    const filters = new URLSearchParams(window.location.search);
+    expect(filters.get("q")).toBe("Tech Summit");
+    expect(filters.get("category")).toBe("Technology");
+    expect(
+      (
+        await screen.findByRole<HTMLInputElement>("textbox", {
+          name: "Search events",
+        })
+      ).value,
+    ).toBe("Tech Summit");
+    expect(
+      screen
+        .getByRole("button", { name: "Technology" })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
+  });
+
+  it("returns keyboard focus to the opener when the mobile drawer closes", async () => {
+    render(<App />);
+    const opener = screen.getByRole("button", { name: "Open navigation" });
+    fireEvent.click(opener);
+    const close = screen.getByRole("button", { name: "Close navigation" });
+    expect(document.activeElement).toBe(close);
+    fireEvent.keyDown(close, { key: "Escape" });
+    await waitFor(() => expect(document.activeElement).toBe(opener));
+    expect(opener.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(opener);
+    fireEvent.click(screen.getByRole("button", { name: "Close navigation" }));
+    await waitFor(() => expect(document.activeElement).toBe(opener));
+  });
+
   it("registers, generates a QR ticket and cancels a registration", async () => {
     window.history.replaceState({}, "", "/events/event-1");
     render(<App />);
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Register for event" }),
+    const register = await screen.findByRole("button", {
+      name: "Register for event",
+    });
+    const notice = screen.getByText(
+      "Demo mode. Registrations are saved only in this browser.",
     );
+    expect(register.getAttribute("aria-describedby")).toBe(notice.id);
+    expect(
+      screen.getByRole("link", { name: "Back to events" }).getAttribute("href"),
+    ).toBe("/events");
+    fireEvent.click(register);
     fireEvent.click(
       await screen.findByRole("button", { name: "View my QR ticket" }),
     );

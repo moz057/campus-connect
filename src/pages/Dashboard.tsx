@@ -46,7 +46,7 @@ export default function Dashboard() {
       {demo && (
         <div className="demo-inline">
           <span className="live-dot" />
-          Organizer demo · Sample campus data. Changes stay in this browser.
+          Demo mode · Sample events and registrations
         </div>
       )}
       <div className="dashboard-stats">

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
@@ -23,12 +23,13 @@ import { dateLabel, timeLabel, isClosed } from "../lib/utils";
 import EventCard from "../components/EventCard";
 import { Empty, Loading, DateTile } from "../components/Common";
 export default function Discover() {
-  const { profile } = useAuth();
+  const { profile, demo } = useAuth();
   const { events, announcements, loading, error, refresh } = useData();
   const [params, setParams] = useSearchParams();
   const [filters, setFilters] = useState(false);
   const [view, setView] = useState("grid");
   const [limit, setLimit] = useState(6);
+  const searchInput = useRef<HTMLInputElement>(null);
   const q = params.get("q") || "",
     category = params.get("category") || "",
     organization = params.get("organization") || "",
@@ -39,8 +40,12 @@ export default function Discover() {
     const next = new URLSearchParams(params);
     if (value) next.set(key, value);
     else next.delete(key);
-    setParams(next);
+    setParams(next, { replace: key === "q" });
     setLimit(6);
+  }
+  function clearFilters() {
+    setParams({});
+    searchInput.current?.focus();
   }
   useEffect(() => {
     setLimit(6);
@@ -88,6 +93,7 @@ export default function Discover() {
   const hasFilters = Boolean(
     q || category || organization || date || availability,
   );
+  const discoveryState = { eventListSearch: params.toString() };
   const firstDay = new Date(month.getFullYear(), month.getMonth(), 1).getDay();
   const days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const today = new Date();
@@ -103,6 +109,11 @@ export default function Discover() {
               : "Find your people. Find your next thing."}
             <span className="greeting-star">✦</span>
           </h1>
+          {demo && (
+            <p className="demo-discovery-note">
+              Demo mode · Sample events and registrations
+            </p>
+          )}
         </div>
         <div className="today-label">
           <CalendarDays size={16} />
@@ -162,10 +173,7 @@ export default function Discover() {
           <section id="upcoming-events" className="events-section">
             <div className="section-heading">
               <div>
-                <h2>
-                  Find your next experience{" "}
-                  <span className="count-tag">{filtered.length}</span>
-                </h2>
+                <h2>Find your next experience</h2>
                 <p>There’s something for every kind of Carolinian.</p>
               </div>
               <Link to="/calendar" className="text-link">
@@ -176,6 +184,7 @@ export default function Discover() {
               <div className="search-box">
                 <Search size={18} />
                 <input
+                  ref={searchInput}
                   aria-label="Search events"
                   placeholder="Search events, interests, or organizations…"
                   value={q}
@@ -185,7 +194,10 @@ export default function Discover() {
                   <button
                     className="icon-button"
                     aria-label="Clear search"
-                    onClick={() => filter("q", "")}
+                    onClick={() => {
+                      filter("q", "");
+                      searchInput.current?.focus();
+                    }}
                   >
                     <X size={14} />
                   </button>
@@ -266,32 +278,34 @@ export default function Discover() {
               role="group"
               aria-label="Event category"
             >
-              {["All events", ...categories].map((c) => (
-                <button
-                  key={c}
-                  className={
-                    category === c || (!category && c === "All events")
-                      ? "selected"
-                      : ""
-                  }
-                  onClick={() =>
-                    filter("category", c === "All events" ? "" : c)
-                  }
-                >
-                  {c === "All events" && <span>✧</span>}
-                  {c}
-                </button>
-              ))}
+              {["", ...categories].map((value) => {
+                const selected = category === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={selected}
+                    className={selected ? "selected" : ""}
+                    onClick={() => filter("category", value)}
+                  >
+                    {!value && <span aria-hidden="true">✧</span>}
+                    {value || "All events"}
+                  </button>
+                );
+              })}
             </div>
-            {hasFilters && (
-              <div className="results-label">
-                {filtered.length} matching event
-                {filtered.length !== 1 ? "s" : ""}
-                <button onClick={() => setParams({})}>
-                  Clear all <X size={12} />
+            <div className="results-label">
+              <span role="status" aria-live="polite" aria-atomic="true">
+                {!loading &&
+                  !error &&
+                  `${filtered.length} matching event${filtered.length === 1 ? "" : "s"}`}
+              </span>
+              {hasFilters && (
+                <button type="button" onClick={clearFilters}>
+                  Clear all <X size={12} aria-hidden="true" />
                 </button>
-              </div>
-            )}
+              )}
+            </div>
             {loading ? (
               <Loading />
             ) : error ? (
@@ -303,7 +317,12 @@ export default function Discover() {
               <>
                 <div className={view === "grid" ? "event-grid" : "event-list"}>
                   {filtered.slice(0, limit).map((e) => (
-                    <EventCard key={e.id} event={e} list={view === "list"} />
+                    <EventCard
+                      key={e.id}
+                      event={e}
+                      list={view === "list"}
+                      navigationState={discoveryState}
+                    />
                   ))}
                 </div>
                 {filtered.length > limit ? (
@@ -326,10 +345,7 @@ export default function Discover() {
                 title="No events found"
                 body="Try another keyword or clear a filter to find your next campus experience."
                 action={
-                  <button
-                    className="button primary"
-                    onClick={() => setParams({})}
-                  >
+                  <button className="button primary" onClick={clearFilters}>
                     Clear filters
                   </button>
                 }
@@ -436,7 +452,12 @@ export default function Discover() {
               <span className="live-dot" />
             </div>
             {upcoming.slice(0, 3).map((e) => (
-              <Link to={"/events/" + e.id} className="up-next-event" key={e.id}>
+              <Link
+                to={"/events/" + e.id}
+                state={discoveryState}
+                className="up-next-event"
+                key={e.id}
+              >
                 <DateTile value={e.start_time} />
                 <div>
                   <h4>{e.title.split(":")[0]}</h4>

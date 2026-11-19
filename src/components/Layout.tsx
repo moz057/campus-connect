@@ -48,6 +48,8 @@ export default function Layout() {
   const [query, setQuery] = useState("");
   const [accountMenuKey, setAccountMenuKey] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const mobileTrigger = useRef<HTMLButtonElement>(null);
+  const mobileClose = useRef<HTMLButtonElement>(null);
   const accountMenu = useRef<HTMLDivElement>(null);
   const accountTrigger = useRef<HTMLButtonElement>(null);
   const location = useLocation(),
@@ -76,6 +78,37 @@ export default function Layout() {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [accountMenuOpen]);
+
+  useEffect(() => {
+    if (!mobile) return;
+    mobileClose.current?.focus();
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMobile();
+      }
+    }
+    const viewport = window.matchMedia?.("(max-width: 640px)");
+    function closeOnResize(event: MediaQueryListEvent) {
+      if (!event.matches) setMobile(false);
+    }
+    document.addEventListener("keydown", closeOnEscape);
+    viewport?.addEventListener("change", closeOnResize);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      viewport?.removeEventListener("change", closeOnResize);
+    };
+  }, [mobile]);
+  useEffect(() => {
+    if (location.pathname === "/" || location.pathname === "/events") {
+      setQuery(new URLSearchParams(location.search).get("q") ?? "");
+    }
+  }, [location.pathname, location.search]);
+
+  function closeMobile() {
+    setMobile(false);
+    requestAnimationFrame(() => mobileTrigger.current?.focus());
+  }
 
   async function logOut() {
     setSigningOut(true);
@@ -117,12 +150,24 @@ export default function Layout() {
       {mobile && (
         <button
           className="sidebar-backdrop"
-          aria-label="Close navigation"
-          onClick={() => setMobile(false)}
+          type="button"
+          aria-hidden="true"
+          tabIndex={-1}
+          onClick={closeMobile}
         />
       )}
-      <aside className={"sidebar " + (mobile ? "is-open" : "")}>
-        <Link to="/" className="brand" onClick={() => setMobile(false)}>
+      <aside
+        id="campus-navigation"
+        aria-label="Campus navigation"
+        className={"sidebar " + (mobile ? "is-open" : "")}
+      >
+        <Link
+          to="/"
+          className="brand"
+          onClick={() => {
+            if (mobile) closeMobile();
+          }}
+        >
           <span className="brand-mark">
             <GraduationCap size={25} strokeWidth={1.8} />
           </span>
@@ -132,9 +177,11 @@ export default function Layout() {
           </span>
         </Link>
         <button
+          type="button"
           className="mobile-close icon-button"
+          ref={mobileClose}
           aria-label="Close navigation"
-          onClick={() => setMobile(false)}
+          onClick={closeMobile}
         >
           <X />
         </button>
@@ -147,7 +194,9 @@ export default function Layout() {
             <NavLink
               key={to}
               to={to}
-              onClick={() => setMobile(false)}
+              onClick={() => {
+                if (mobile) closeMobile();
+              }}
               className={({ isActive }) =>
                 "nav-item " +
                 (isActive || (to === "/events" && location.pathname === "/")
@@ -195,7 +244,9 @@ export default function Layout() {
                   key={to}
                   end={to === "/admin"}
                   to={to}
-                  onClick={() => setMobile(false)}
+                  onClick={() => {
+                    if (mobile) closeMobile();
+                  }}
                   className={({ isActive }) =>
                     "nav-item " + (isActive ? "active" : "")
                   }
@@ -211,7 +262,9 @@ export default function Layout() {
           <NavLink
             className="nav-item"
             to="/leadership"
-            onClick={() => setMobile(false)}
+            onClick={() => {
+              if (mobile) closeMobile();
+            }}
           >
             <Users size={19} />
             Leadership
@@ -238,13 +291,20 @@ export default function Layout() {
           </div>
         </div>
       </aside>
-      <div className="main-shell">
+      <div className="main-shell" inert={mobile}>
         <header className="topbar">
           <div className="breadcrumb">
             <button
+              type="button"
               className="icon-button mobile-menu"
+              ref={mobileTrigger}
               aria-label="Open navigation"
-              onClick={() => setMobile(true)}
+              aria-expanded={mobile}
+              aria-controls="campus-navigation"
+              onClick={() => {
+                setAccountMenuKey(null);
+                setMobile(true);
+              }}
             >
               <Menu size={22} />
             </button>
@@ -300,13 +360,20 @@ export default function Layout() {
               className="global-search"
               onSubmit={(e) => {
                 e.preventDefault();
-                navigate("/events?q=" + encodeURIComponent(query));
+                const params = new URLSearchParams(
+                  location.pathname === "/" || location.pathname === "/events"
+                    ? location.search
+                    : "",
+                );
+                if (query.trim()) params.set("q", query.trim());
+                else params.delete("q");
+                navigate({ pathname: "/events", search: params.toString() });
               }}
             >
               <Search size={17} />
               <input
                 aria-label="Search campus events"
-                placeholder="Search anything…"
+                placeholder="Search campus events"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />

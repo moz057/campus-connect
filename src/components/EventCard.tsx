@@ -7,9 +7,11 @@ import { useData } from "../contexts/DataContext";
 export default function EventCard({
   event: e,
   list = false,
+  navigationState,
 }: {
   event: CampusEvent;
   list?: boolean;
+  navigationState?: { eventListSearch: string };
 }) {
   const { profile } = useAuth();
   const { registrations } = useData();
@@ -22,7 +24,14 @@ export default function EventCard({
   const full = (e.filled || 0) >= e.capacity;
   return (
     <article className={"event-card " + (list ? "event-card-list" : "")}>
-      <Link to={"/events/" + e.id} className="event-image-link">
+      <Link
+        to={"/events/" + e.id}
+        state={navigationState}
+        className="event-image-link"
+        aria-label={
+          e.category + (registered ? " You’re registered" : "") + ": " + e.title
+        }
+      >
         <img
           className="event-image"
           src={e.banner_url || "/images/campus.jpg"}
@@ -51,7 +60,11 @@ export default function EventCard({
       </Link>
       <div className="event-card-content">
         <span className="event-org">{e.organization}</span>
-        <Link className="event-title" to={"/events/" + e.id}>
+        <Link
+          className="event-title"
+          to={"/events/" + e.id}
+          state={navigationState}
+        >
           {e.title}
         </Link>
         <div className="event-card-facts">
@@ -78,7 +91,11 @@ export default function EventCard({
             {e.filled || 0}
             <span>/ {e.capacity} slots filled</span>
           </span>
-          <Link to={"/events/" + e.id} className="button event-cta">
+          <Link
+            to={"/events/" + e.id}
+            state={navigationState}
+            className="button event-cta"
+          >
             {registered
               ? "View ticket"
               : isClosed(e)

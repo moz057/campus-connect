@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   CalendarDays,
@@ -29,6 +29,16 @@ import { Empty, Loading } from "../components/Common";
 import Ticket from "../components/Ticket";
 export default function EventDetails() {
   const { id } = useParams();
+  const { state } = useLocation();
+  const listSearch = (state as { eventListSearch?: string } | null)
+    ?.eventListSearch;
+  const backToEvents = {
+    pathname: "/events",
+    search:
+      typeof listSearch === "string"
+        ? new URLSearchParams(listSearch).toString()
+        : "",
+  };
   const {
     events,
     registrations,
@@ -38,7 +48,7 @@ export default function EventDetails() {
     deleteEvent,
     announcements,
   } = useData();
-  const { profile } = useAuth();
+  const { profile, demo } = useAuth();
   const { canManage, setScope } = useOrganizations();
   const notify = useToast();
   const navigate = useNavigate();
@@ -56,7 +66,7 @@ export default function EventDetails() {
         title="Event not found"
         body="This event may have been removed."
         action={
-          <Link className="button primary" to="/events">
+          <Link className="button primary" to={backToEvents}>
             Browse events
           </Link>
         }
@@ -70,6 +80,7 @@ export default function EventDetails() {
     ),
     full = (e.filled || 0) >= e.capacity,
     closed = isClosed(e);
+  const showsDemoRegistrationNote = demo && !registration && !closed;
   const formUrl = parseRegistrationFormUrl(e.registration_form_url);
   const formConfirmed =
     confirmedForm?.eventId === e.id &&
@@ -90,7 +101,7 @@ export default function EventDetails() {
   }
   return (
     <>
-      <Link to="/events" className="back-link">
+      <Link to={backToEvents} className="back-link">
         <ArrowLeft size={16} />
         Back to events
       </Link>
@@ -106,95 +117,25 @@ export default function EventDetails() {
         </span>
       </div>
       <div className="detail-layout">
-        <div className="detail-main">
+        <header className="detail-heading">
           <span className="eyebrow">{e.organization}</span>
           <h1>{e.title}</h1>
-          {soon && (
-            <div className="soon-banner">
-              <Bell size={18} />
-              <div>
-                <strong>This event is starting soon!</strong>
-                <p>
-                  Have your QR ticket ready and allow a little extra time for
-                  check-in.
-                </p>
-              </div>
-            </div>
-          )}
-          <section
-            className="detail-section"
-            aria-labelledby="event-details-heading"
-          >
-            <h2 id="event-details-heading">Event details</h2>
-            <dl className="event-facts">
-              <div>
-                <dt>
-                  <CalendarDays size={16} aria-hidden="true" /> Starts
-                </dt>
-                <dd>
-                  <time dateTime={e.start_time}>
-                    {dateLabel(e.start_time, {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}{" "}
-                    PHT
-                  </time>
-                </dd>
-              </div>
-              <div>
-                <dt>
-                  <Clock3 size={16} aria-hidden="true" /> Ends
-                </dt>
-                <dd>
-                  <time dateTime={e.end_time}>
-                    {dateLabel(e.end_time, {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}{" "}
-                    PHT
-                  </time>
-                </dd>
-              </div>
-              <div>
-                <dt>
-                  <MapPin size={16} aria-hidden="true" /> Venue
-                </dt>
-                <dd>{e.venue}</dd>
-              </div>
-              <div>
-                <dt>
-                  <GraduationCap size={16} aria-hidden="true" /> Hosted by
-                </dt>
-                <dd>
-                  {e.organization_id ? (
-                    <Link
-                      className="text-link"
-                      to={"/organizations/" + e.organization_id}
-                    >
-                      {e.organization}
-                    </Link>
-                  ) : (
-                    e.organization
-                  )}
-                </dd>
-              </div>
-            </dl>
-            <p className="preserve-lines">{e.description}</p>
-          </section>
-          {announcements.filter((a) => a.event_id === id).length > 0 && (
-            <section className="detail-section">
-              <h2>Event updates</h2>
-              {announcements
-                .filter((a) => a.event_id === id)
-                .map((a) => (
-                  <div className="panel announcement" key={a.id}>
-                    <h3>{a.title}</h3>
-                    <p>{a.body}</p>
-                  </div>
-                ))}
-            </section>
-          )}
-        </div>
+          <div className="detail-summary">
+            <span>
+              <CalendarDays size={16} aria-hidden="true" />
+              <time dateTime={e.start_time}>
+                {dateLabel(e.start_time, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}{" "}
+                PHT
+              </time>
+            </span>
+            <span>
+              <MapPin size={16} aria-hidden="true" /> {e.venue}
+            </span>
+          </div>
+        </header>
         <aside>
           <div className="registration-panel panel">
             <h2>Registration</h2>
@@ -296,42 +237,57 @@ export default function EventDetails() {
                 </button>
               </>
             ) : (
-              <button
-                disabled={
-                  busy ||
-                  closed ||
-                  Boolean(
-                    profile && e.registration_form_required && !formConfirmed,
-                  )
-                }
-                className="button primary full-width"
-                onClick={() => {
-                  if (!profile) {
-                    navigate("/login", { state: { from: "/events/" + id } });
-                    return;
+              <>
+                {showsDemoRegistrationNote && (
+                  <p
+                    className="demo-registration-note"
+                    id="demo-registration-note"
+                  >
+                    Demo mode. Registrations are saved only in this browser.
+                  </p>
+                )}
+                <button
+                  aria-describedby={
+                    showsDemoRegistrationNote
+                      ? "demo-registration-note"
+                      : undefined
                   }
-                  void act(
-                    () =>
-                      register(
-                        e.id,
-                        full,
-                        formConfirmed ? confirmedForm.url : undefined,
-                      ),
-                    full
-                      ? "You’re on the waitlist."
-                      : "You’re registered! Your QR ticket is ready.",
-                  );
-                }}
-              >
-                {busy
-                  ? "Saving…"
-                  : closed
-                    ? "Registration closed"
-                    : full
-                      ? "Join the waitlist"
-                      : "Register for event"}
-                {!closed && <ArrowUpRight size={17} />}
-              </button>
+                  disabled={
+                    busy ||
+                    closed ||
+                    Boolean(
+                      profile && e.registration_form_required && !formConfirmed,
+                    )
+                  }
+                  className="button primary full-width"
+                  onClick={() => {
+                    if (!profile) {
+                      navigate("/login", { state: { from: "/events/" + id } });
+                      return;
+                    }
+                    void act(
+                      () =>
+                        register(
+                          e.id,
+                          full,
+                          formConfirmed ? confirmedForm.url : undefined,
+                        ),
+                      full
+                        ? "You’re on the waitlist."
+                        : "You’re registered! Your QR ticket is ready.",
+                    );
+                  }}
+                >
+                  {busy
+                    ? "Saving…"
+                    : closed
+                      ? "Registration closed"
+                      : full
+                        ? "Join the waitlist"
+                        : "Register for event"}
+                  {!closed && <ArrowUpRight size={17} />}
+                </button>
+              </>
             )}
             <p className="registration-deadline">
               <Clock3 size={14} />
@@ -396,6 +352,93 @@ export default function EventDetails() {
             )}
           </div>
         </aside>
+        <div className="detail-main">
+          {soon && (
+            <div className="soon-banner">
+              <Bell size={18} />
+              <div>
+                <strong>This event is starting soon!</strong>
+                <p>
+                  Have your QR ticket ready and allow a little extra time for
+                  check-in.
+                </p>
+              </div>
+            </div>
+          )}
+          <section
+            className="detail-section"
+            aria-labelledby="event-details-heading"
+          >
+            <h2 id="event-details-heading">Event details</h2>
+            <dl className="event-facts">
+              <div>
+                <dt>
+                  <CalendarDays size={16} aria-hidden="true" /> Starts
+                </dt>
+                <dd>
+                  <time dateTime={e.start_time}>
+                    {dateLabel(e.start_time, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}{" "}
+                    PHT
+                  </time>
+                </dd>
+              </div>
+              <div>
+                <dt>
+                  <Clock3 size={16} aria-hidden="true" /> Ends
+                </dt>
+                <dd>
+                  <time dateTime={e.end_time}>
+                    {dateLabel(e.end_time, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}{" "}
+                    PHT
+                  </time>
+                </dd>
+              </div>
+              <div>
+                <dt>
+                  <MapPin size={16} aria-hidden="true" /> Venue
+                </dt>
+                <dd>{e.venue}</dd>
+              </div>
+              <div>
+                <dt>
+                  <GraduationCap size={16} aria-hidden="true" /> Hosted by
+                </dt>
+                <dd>
+                  {e.organization_id ? (
+                    <Link
+                      className="text-link"
+                      to={"/organizations/" + e.organization_id}
+                    >
+                      {e.organization}
+                    </Link>
+                  ) : (
+                    e.organization
+                  )}
+                </dd>
+              </div>
+            </dl>
+            <p className="preserve-lines">{e.description}</p>
+          </section>
+          {announcements.filter((a) => a.event_id === id).length > 0 && (
+            <section className="detail-section">
+              <h2>Event updates</h2>
+              {announcements
+                .filter((a) => a.event_id === id)
+                .map((a) => (
+                  <div className="panel announcement" key={a.id}>
+                    <h3>{a.title}</h3>
+                    <p>{a.body}</p>
+                  </div>
+                ))}
+            </section>
+          )}
+        </div>
       </div>
       {ticket && registration && !e.cancelled_at && (
         <Ticket
