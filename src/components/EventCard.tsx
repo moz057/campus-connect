@@ -54,36 +54,31 @@ export default function EventCard({
         <Link className="event-title" to={"/events/" + e.id}>
           {e.title}
         </Link>
-        <div className="event-meta">
-          <CalendarDays size={14} />
-          <span>
-            {dateLabel(e.start_time, {
-              month: "short",
-              day: "numeric",
-              weekday: "short",
-            })}
-            <span className="meta-dot">·</span>
-            {timeLabel(e.start_time)}
-          </span>
-        </div>
-        <div className="event-meta">
-          <MapPin size={14} />
-          <span>{e.venue}</span>
-        </div>
-        <div className="card-progress">
-          <div
-            style={{
-              width: Math.min(100, ((e.filled || 0) / e.capacity) * 100) + "%",
-            }}
-          />
+        <div className="event-card-facts">
+          <div className="event-meta">
+            <CalendarDays size={16} aria-hidden="true" />
+            <span>
+              {dateLabel(e.start_time, {
+                month: "short",
+                day: "numeric",
+                weekday: "short",
+              })}
+              <span className="meta-dot">·</span>
+              {timeLabel(e.start_time)}
+            </span>
+          </div>
+          <div className="event-meta">
+            <MapPin size={16} aria-hidden="true" />
+            <span>{e.venue}</span>
+          </div>
         </div>
         <div className="event-card-bottom">
           <span className={"slots " + (full ? "full" : "")}>
-            <Users size={14} />
+            <Users size={16} aria-hidden="true" />
             {e.filled || 0}
             <span>/ {e.capacity} slots filled</span>
           </span>
-          <Link to={"/events/" + e.id} className="event-cta">
+          <Link to={"/events/" + e.id} className="button event-cta">
             {registered
               ? "View ticket"
               : isClosed(e)

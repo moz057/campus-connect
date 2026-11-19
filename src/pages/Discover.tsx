@@ -13,7 +13,6 @@ import {
   CalendarDays,
   Sparkles,
   Users,
-  MapPin,
   Clock3,
   GraduationCap,
 } from "lucide-react";
@@ -119,36 +118,15 @@ export default function Discover() {
           <section className="campus-hero">
             <div className="hero-image" />
             <div className="hero-text">
-              <span className="hero-kicker">
-                <span /> ONE CAMPUS. ENDLESS POSSIBILITIES.
-              </span>
               <h2>
                 Your campus.
                 <br />
                 Your community.
               </h2>
-              <p>
-                Big ideas, new friendships, and moments that matter.
-                <br className="desktop-break" /> Make the most of your
-                Carolinian journey.
-              </p>
               <a href="#upcoming-events" className="hero-button">
-                Discover what’s on <ArrowUpRight size={17} />
+                Discover what’s on <ArrowUpRight size={17} aria-hidden="true" />
               </a>
-              <div className="hero-community">
-                <div className="avatar-stack">
-                  <span>JM</span>
-                  <span>ST</span>
-                  <span>AR</span>
-                  <span>ML</span>
-                </div>
-                <span>A little more connected. A lot more Carolinian.</span>
-              </div>
             </div>
-            <div className="hero-image-caption">
-              <MapPin size={12} /> Carolinian life · Cebu City
-            </div>
-            <span className="hero-spark">✳</span>
           </section>
           <div className="discovery-stats">
             <div>

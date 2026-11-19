@@ -596,8 +596,10 @@ a:focus-visible {
   min-width: 0;
 }
 .campus-hero {
+  display: flex;
+  align-items: center;
   position: relative;
-  min-height: 280px;
+  min-height: clamp(230px, 24vw, 320px);
   border-radius: 12px;
   overflow: hidden;
   background: #1b492f;
@@ -629,8 +631,12 @@ a:focus-visible {
   background: linear-gradient(0deg, #153f2b70, transparent 65%);
 }
 .hero-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
   position: relative;
-  padding: 31px 32px 25px;
+  padding: clamp(24px, 4vw, 44px);
   color: white;
 }
 .hero-kicker {
@@ -642,26 +648,14 @@ a:focus-visible {
   font-weight: 600;
   color: #d9d8ad;
 }
-.hero-kicker > span {
-  display: inline-block;
-  border-radius: 50%;
-  height: 4px;
-  width: 4px;
-  background: #edd471;
-}
 .hero-text h2 {
   font-size: 40px;
   line-height: 1.19;
   letter-spacing: -1.5px;
   color: #fff;
   max-width: 400px;
-  margin: 14px 0 11px;
+  margin: 0;
   font-weight: 650;
-}
-.hero-text p {
-  font-size: 10px;
-  line-height: 1.85;
-  color: #ccdac9;
 }
 .hero-button {
   display: inline-flex;
@@ -673,7 +667,6 @@ a:focus-visible {
   border-radius: 6px;
   font-size: 10px;
   font-weight: 700;
-  margin-top: 18px;
   transition:
     background 0.15s,
     transform 0.15s;
@@ -681,65 +674,6 @@ a:focus-visible {
 .hero-button:hover {
   background: #ffd250;
   transform: translateY(-1px);
-}
-.hero-community {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-top: 21px;
-}
-.hero-community > span {
-  font-size: 7.5px;
-  color: #c0cfba;
-}
-.avatar-stack {
-  display: flex;
-  padding-left: 0;
-}
-.avatar-stack span {
-  border: 2px solid #24472e;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 23px;
-  height: 23px;
-  border-radius: 50%;
-  margin-left: -5px;
-  background: #e5c6a3;
-  color: #536343;
-  font-size: 6px;
-  font-weight: 700;
-}
-.avatar-stack span:first-child {
-  margin-left: 0;
-}
-.avatar-stack span:nth-child(2) {
-  background: #b1c4ad;
-}
-.avatar-stack span:nth-child(3) {
-  background: #e7d9bb;
-}
-.avatar-stack span:nth-child(4) {
-  background: #c8bbcc;
-}
-.hero-image-caption {
-  position: absolute;
-  right: 14px;
-  bottom: 15px;
-  font-size: 7px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #e5e8d7;
-}
-.hero-spark {
-  position: absolute;
-  right: 29px;
-  top: 22px;
-  font-size: 39px;
-  font-weight: 400;
-  color: #efdc9c;
-  transform: rotate(10deg);
 }
 .discovery-stats {
   display: grid;
@@ -969,15 +903,9 @@ a:focus-visible {
 }
 .category-tabs {
   display: flex;
-  gap: 5px;
-  align-items: center;
-  overflow-x: auto;
-  scrollbar-width: none;
-  margin: 0 0 20px;
-  padding-bottom: 1px;
-}
-.category-tabs::-webkit-scrollbar {
-  display: none;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
 }
 .category-tabs button {
   white-space: nowrap;
@@ -1040,10 +968,13 @@ a:focus-visible {
 }
 .event-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 17px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 245px), 1fr));
+  gap: 20px;
 }
 .event-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   border: 1px solid #e1e7da;
   border-radius: 10px;
   background: #fff;
@@ -1140,13 +1071,20 @@ a:focus-visible {
   font-size: 7px;
 }
 .event-card-content {
-  padding: 15px 14px 12px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: clamp(16px, 2vw, 22px);
+}
+.event-card-facts {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 .event-org {
   display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
   color: #929b87;
   font-size: 7px;
   letter-spacing: 0.2px;
@@ -1159,41 +1097,28 @@ a:focus-visible {
   color: #35402f;
   line-height: 1.65;
   letter-spacing: -0.25px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 43px;
-  margin-bottom: 11px;
+  display: block;
+  overflow-wrap: anywhere;
+  margin-bottom: 14px;
 }
 .event-title:hover {
   color: #1b5e20;
 }
 .event-meta {
   display: flex;
-  gap: 6px;
-  align-items: center;
-  margin-top: 7px;
-  color: #909887;
-  font-size: 8px;
+  gap: 8px;
+  align-items: flex-start;
+  color: var(--readable-muted, #526053);
   min-width: 0;
 }
 .event-meta svg {
-  color: #a1ad96;
-  stroke-width: 1.5;
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  flex: none;
 }
-.event-meta span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.meta-dot {
-  display: inline-block;
-  padding: 0 5px;
-  color: #bdc3b5;
-}
+.event-meta > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.meta-dot { padding-inline: 5px; }
 .card-progress {
   height: 3px;
   border-radius: 3px;
@@ -1207,48 +1132,27 @@ a:focus-visible {
   border-radius: 3px;
 }
 .event-card-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 5px;
+  display: grid;
+  justify-items: start;
+  gap: 10px 16px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
 }
 .slots {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: 7px;
-  color: #82916c;
-  white-space: nowrap;
+  flex-wrap: wrap;
+  gap: 4px;
+  color: var(--readable-muted, #526053);
   font-weight: 600;
 }
-.slots svg {
-  height: 11px;
-  width: 11px;
-  margin-right: 1px;
-}
-.slots span {
-  color: #b0b5a5;
-  font-size: 7px;
-  font-weight: 400;
-}
-.slots.full {
-  color: #ba9e46;
-}
-.event-cta {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 7px;
-  color: #6b8452;
-  white-space: nowrap;
-  font-weight: 600;
-}
-.event-cta:hover {
-  color: #1b5e20;
-}
-.event-cta svg {
-  width: 11px;
-  height: 11px;
+.slots span { font-weight: 400; }
+.slots.full { color: #775d22; }
+.event-card .event-cta {
+  min-height: 44px;
+  padding: 8px 12px;
+  color: var(--green);
 }
 .end-note {
   display: flex;
@@ -1273,8 +1177,12 @@ a:focus-visible {
   flex-direction: column;
   gap: 15px;
 }
-.event-card-list {
+.event-card-list { flex-direction: row; }
+.event-card-list .event-card-bottom {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
 }
 .event-card-list .event-image-link {
   width: 230px;
@@ -3183,24 +3091,11 @@ tr:hover td {
   .hero-text h2 {
     font-size: 48px;
   }
-  .hero-text p {
-    font-size: 12px;
-  }
-  .campus-hero {
-    min-height: 310px;
-  }
-  .hero-text {
-    padding: 35px 38px;
-  }
   .hero-kicker {
     font-size: 8px;
   }
   .hero-button {
     font-size: 11px;
-    padding: 12px 17px;
-  }
-  .hero-community > span {
-    font-size: 8px;
   }
   .event-title {
     font-size: 15px;
@@ -3208,9 +3103,6 @@ tr:hover td {
   }
   .event-image-link {
     height: 185px;
-  }
-  .event-card-content {
-    padding: 18px;
   }
   .event-meta {
     font-size: 10px;
@@ -3272,9 +3164,6 @@ tr:hover td {
     grid-template-columns: minmax(0, 1fr) 218px;
     gap: 22px;
   }
-  .event-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .event-image-link {
     height: 160px;
   }
@@ -3317,26 +3206,11 @@ tr:hover td {
   .discovery-stats small {
     font-size: 7px;
   }
-  .hero-text {
-    padding: 28px 25px;
-  }
   .hero-text h2 {
     font-size: 36px;
   }
   .hero-kicker {
     font-size: 6px;
-  }
-  .hero-text p {
-    font-size: 9px;
-  }
-  .hero-community > span {
-    font-size: 6px;
-  }
-  .hero-image-caption {
-    font-size: 6px;
-  }
-  .campus-hero {
-    min-height: 270px;
   }
   .section-heading h2 {
     font-size: 15px;
@@ -3471,26 +3345,8 @@ tr:hover td {
   .hero-text h2 {
     font-size: 43px;
   }
-  .hero-text p {
-    font-size: 11px;
-  }
   .hero-kicker {
     font-size: 7px;
-  }
-  .hero-text {
-    padding: 30px;
-  }
-  .hero-community > span {
-    font-size: 8px;
-  }
-  .campus-hero {
-    min-height: 300px;
-  }
-  .hero-image-caption {
-    font-size: 8px;
-  }
-  .event-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .event-title {
     font-size: 12px;
@@ -3498,9 +3354,6 @@ tr:hover td {
   }
   .event-meta {
     font-size: 8px;
-  }
-  .event-card-content {
-    padding: 13px 11px;
   }
   .event-org {
     font-size: 7px;
@@ -3769,30 +3622,8 @@ tr:hover td {
   .hero-text h2 {
     font-size: 37px;
   }
-  .hero-text p {
-    font-size: 9px;
-  }
-  .hero-text {
-    padding: 27px;
-  }
   .hero-kicker {
     font-size: 6px;
-  }
-  .hero-community > span {
-    font-size: 6px;
-  }
-  .campus-hero {
-    min-height: 280px;
-  }
-  .hero-image-caption {
-    font-size: 6px;
-  }
-  .hero-spark {
-    right: 20px;
-    font-size: 30px;
-  }
-  .event-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .event-image-link {
     height: 145px;
@@ -3800,9 +3631,6 @@ tr:hover td {
   .event-title {
     font-size: 13px;
     min-height: 43px;
-  }
-  .event-card-content {
-    padding: 14px 12px;
   }
   .discovery-stats > div {
     padding-left: 15px;
@@ -3832,9 +3660,6 @@ tr:hover td {
   }
   .search-box input {
     font-size: 9px;
-  }
-  .category-tabs {
-    gap: 3px;
   }
   .category-tabs button {
     font-size: 8px;
@@ -4136,25 +3961,13 @@ tr:hover td {
     margin-left: 6px;
     margin-top: -2px;
   }
-  .campus-hero {
-    min-height: 286px;
-    border-radius: 10px;
-  }
-  .hero-text {
-    padding: 26px 23px 23px;
-  }
   .hero-text h2 {
     font-size: 39px;
     letter-spacing: -1.3px;
-    margin-top: 16px;
   }
   .hero-kicker {
     font-size: 5.5px;
     letter-spacing: 1.2px;
-  }
-  .hero-text p {
-    font-size: 9px;
-    max-width: 260px;
   }
   .hero-image {
     background-image:
@@ -4164,31 +3977,9 @@ tr:hover td {
       center,
       63% 50%;
   }
-  .hero-spark {
-    font-size: 29px;
-    right: 20px;
-    top: 20px;
-  }
-  .hero-image-caption {
-    display: none;
-  }
-  .hero-community {
-    margin-top: 21px;
-    gap: 7px;
-  }
-  .hero-community > span {
-    font-size: 6px;
-  }
   .hero-button {
     font-size: 9px;
-    padding: 10px 13px;
-    margin-top: 16px;
     gap: 17px;
-  }
-  .avatar-stack span {
-    width: 21px;
-    height: 21px;
-    font-size: 5px;
   }
   .discovery-stats {
     padding: 21px 0;
@@ -4258,27 +4049,15 @@ tr:hover td {
     gap: 5px;
     padding: 9px;
   }
-  .category-tabs {
-    gap: 4px;
-    margin-right: -18px;
-    padding-right: 18px;
-    margin-bottom: 17px;
-  }
   .category-tabs button {
     font-size: 8px;
     padding: 7px 10px;
-  }
-  .event-grid {
-    gap: 12px;
   }
   .event-image-link {
     height: 123px;
   }
   .event-card {
     border-radius: 8px;
-  }
-  .event-card-content {
-    padding: 12px 10px 11px;
   }
   .category-badge {
     font-size: 6px;
@@ -4317,15 +4096,6 @@ tr:hover td {
   }
   .meta-dot {
     padding: 0 3px;
-  }
-  .card-progress {
-    margin: 13px 0 9px;
-    height: 2px;
-  }
-  .event-card-bottom {
-    gap: 5px;
-    flex-wrap: wrap;
-    row-gap: 7px;
   }
   .slots,
   .slots span {
@@ -4990,17 +4760,8 @@ tr:hover td {
   .chart-wrap {
     height: 260px;
   }
-  .event-card-list {
-    flex-direction: row;
-  }
-  .event-card-list .event-image-link {
-    width: 120px;
-    height: auto;
-    min-height: 190px;
-  }
-  .event-card-list .event-card-content {
-    padding: 14px 11px;
-  }
+  .event-card-list { flex-direction: column; }
+  .event-card-list .event-image-link { width: 100%; height: 180px; min-height: 0; }
   .event-card-list .event-title {
     font-size: 12px;
   }
@@ -5064,18 +4825,11 @@ tr:hover td {
   }
 }
 @media (max-width: 480px) {
-  .event-grid {
-    grid-template-columns: 1fr;
-    gap: 19px;
-  }
   .event-image-link {
     height: 190px;
   }
   .event-card {
     border-radius: 10px;
-  }
-  .event-card-content {
-    padding: 18px;
   }
   .event-title {
     font-size: 16px;
@@ -5126,10 +4880,6 @@ tr:hover td {
   .event-cta svg {
     width: 13px;
     height: 13px;
-  }
-  .card-progress {
-    height: 3px;
-    margin: 20px 0 13px;
   }
   .registered-overlay {
     font-size: 9px;
@@ -5187,17 +4937,6 @@ tr:hover td {
   .filter-button {
     font-size: 10px;
   }
-  .event-card-list {
-    flex-direction: column;
-  }
-  .event-card-list .event-image-link {
-    width: 100%;
-    height: 180px;
-    min-height: 0;
-  }
-  .event-card-list .event-card-content {
-    padding: 18px;
-  }
   .event-card-list .event-title {
     font-size: 16px;
   }
@@ -5215,20 +4954,11 @@ tr:hover td {
   .end-note {
     font-size: 8px;
   }
-  .hero-community > span {
-    font-size: 7px;
-  }
   .hero-kicker {
     font-size: 6px;
   }
-  .hero-text p {
-    font-size: 10px;
-  }
   .hero-button {
     font-size: 10px;
-  }
-  .campus-hero {
-    min-height: 300px;
   }
   .welcome-row h1 {
     font-size: 24px;
@@ -5398,7 +5128,6 @@ tr:hover td {
   .detail-main h1,
   .welcome-row h1 { font-size: clamp(1.75rem, 6vw, 2.25rem); line-height: 1.25; }
   .page-title p,
-  .hero-text p,
   .section-heading p,
   .detail-section > p,
   .organization-card > p,
@@ -5448,8 +5177,6 @@ tr:hover td {
 
   .event-title,
   .event-card-list .event-title { min-height: 0; }
-  .event-meta { flex-wrap: wrap; }
-  .event-meta span,
   .organization-event-meta span { min-width: 0; overflow-wrap: anywhere; }
   .event-meta svg,
   .organization-event-meta svg,
@@ -5495,7 +5222,6 @@ tr:hover td {
   .announcement-topline .eyebrow,
   .registration-item-content .eyebrow,
   .hero-kicker,
-  .hero-community > span,
   .category-badge,
   .detail-banner .category-badge,
   .registered-overlay,
@@ -5555,8 +5281,6 @@ tr:hover td {
   .page-tabs { gap: 4px 16px; flex-wrap: wrap; }
   .sidebar .nav-item { height: auto; min-height: 46px; padding-block: 8px; }
   .search-box { min-height: 44px; }
-  .hero-text p,
-  .hero-community > span { color: #f1f5ec; }
   input:not([type="checkbox"], [type="radio"], [type="file"]),
   select,
   textarea,
@@ -5613,8 +5337,6 @@ tr:hover td {
 @media screen and (max-width: 480px) {
   .organization-card-actions { width: 100%; }
   .demo-roles { grid-template-columns: minmax(0, 1fr); }
-  .event-grid,
-  .event-grid.compact-grid { grid-template-columns: minmax(0, 1fr); }
   .discovery-stats > div { padding-inline: 8px; min-width: 0; }
   .event-search-row { flex-wrap: wrap; }
   .event-search-row .search-box { flex: 1 1 100%; }
