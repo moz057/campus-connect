@@ -96,7 +96,6 @@ export default function Discover() {
     <>
       <div className="welcome-row">
         <div>
-          <span className="eyebrow">THE CAROLINIAN EXPERIENCE</span>
           <h1>
             {profile
               ? "Hey, " +
@@ -105,10 +104,6 @@ export default function Discover() {
               : "Find your people. Find your next thing."}
             <span className="greeting-star">✦</span>
           </h1>
-          <p>
-            Good things happen when you show up. Let’s see what’s happening on
-            campus.
-          </p>
         </div>
         <div className="today-label">
           <CalendarDays size={16} />

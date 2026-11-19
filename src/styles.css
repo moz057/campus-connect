@@ -1,7 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap");
 @import "tailwindcss";
 :root {
-  font-family: "DM Sans", sans-serif;
+  --body-font: "DM Sans", sans-serif;
+  --heading-font: "Manrope", sans-serif;
+  font-family: var(--body-font);
   color: #1f2937;
   background: #f7f8f5;
   font-synthesis: none;
@@ -111,7 +113,7 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: "Manrope", sans-serif;
+  font-family: var(--heading-font);
   color: var(--heading);
   font-weight: 750;
 }
@@ -166,7 +168,7 @@ a:focus-visible {
   align-items: center;
   color: #fff;
   white-space: nowrap;
-  font-family: "Manrope", sans-serif;
+  font-family: var(--heading-font);
   font-size: 19px;
   font-weight: 800;
   letter-spacing: -0.8px;
@@ -176,7 +178,7 @@ a:focus-visible {
 }
 .brand small {
   display: block;
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--body-font);
   font-size: 7.5px;
   font-weight: 500;
   letter-spacing: 1.35px;
@@ -503,7 +505,7 @@ a:focus-visible {
   background: #e6e1d0;
   color: #5b6744;
   font-size: 13px;
-  font-family: "Manrope", sans-serif;
+  font-family: var(--heading-font);
   font-weight: 700;
   overflow: hidden;
 }
@@ -569,16 +571,6 @@ a:focus-visible {
   font-weight: 750;
   letter-spacing: -0.85px;
 }
-.welcome-row .eyebrow {
-  font-size: 8px;
-  letter-spacing: 1.7px;
-  margin-bottom: 9px;
-}
-.welcome-row p {
-  font-size: 11px;
-  margin-top: 8px;
-  letter-spacing: 0.03px;
-}
 .greeting-star {
   font-size: 22px;
   color: #bbaa5c;
@@ -594,8 +586,6 @@ a:focus-visible {
   color: #858e7c;
   font-size: 10px;
   white-space: nowrap;
-  align-self: flex-start;
-  margin-top: 28px;
 }
 .discover-layout {
   display: grid;
@@ -801,7 +791,7 @@ a:focus-visible {
   line-height: 1;
 }
 .discovery-stats strong {
-  font-family: "Manrope", sans-serif;
+  font-family: var(--heading-font);
   letter-spacing: -0.5px;
   font-size: 20px;
   color: #2a3929;
@@ -809,7 +799,7 @@ a:focus-visible {
 }
 .discovery-stats small {
   display: block;
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--body-font);
   letter-spacing: 0;
   font-size: 8px;
   color: #929889;
@@ -849,7 +839,7 @@ a:focus-visible {
 .count-tag {
   display: inline-block;
   background: #e9eee1;
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--body-font);
   font-size: 9px;
   font-weight: 500;
   border-radius: 5px;
@@ -1163,7 +1153,7 @@ a:focus-visible {
   margin-bottom: 8px;
 }
 .event-title {
-  font-family: "Manrope", sans-serif;
+  font-family: var(--heading-font);
   font-size: 13px;
   font-weight: 750;
   color: #35402f;
@@ -1464,7 +1454,7 @@ a:focus-visible {
   text-transform: uppercase;
 }
 .date-tile strong {
-  font-family: "Manrope", sans-serif;
+  font-family: var(--heading-font);
   display: block;
   color: #697a50;
   line-height: 1.3;
@@ -2135,7 +2125,7 @@ a:focus-visible {
   color: var(--gold);
 }
 .ticket-header strong {
-  font-family: "Manrope", sans-serif;
+  font-family: var(--heading-font);
   font-size: 20px;
 }
 .ticket-header > span {
@@ -2500,7 +2490,7 @@ a:focus-visible {
   background: #eaf1df;
 }
 .demo-roles strong {
-  font-family: "Manrope", sans-serif;
+  font-family: var(--heading-font);
   color: #5f774f;
   font-size: 12px;
   margin-top: 10px;
@@ -2623,7 +2613,7 @@ a:focus-visible {
   font-size: 22px;
 }
 .fc .fc-button {
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--body-font);
   font-size: 11px;
   box-shadow: none !important;
   padding: 7px 12px;
@@ -2699,7 +2689,7 @@ a:focus-visible {
   align-items: center;
 }
 .metric-card > strong {
-  font-family: "Manrope", sans-serif;
+  font-family: var(--heading-font);
   color: #405b32;
   font-weight: 650;
   font-size: 32px;
@@ -3086,7 +3076,7 @@ tr:hover td {
   top: 16px;
 }
 .attendance-mini-stats strong {
-  font-family: "Manrope", sans-serif;
+  font-family: var(--heading-font);
   font-size: 27px;
   color: #647d4b;
   font-weight: 650;
@@ -3246,9 +3236,6 @@ tr:hover td {
   .welcome-row h1 {
     font-size: 30px;
   }
-  .welcome-row p {
-    font-size: 12px;
-  }
 }
 @media (max-width: 1250px) {
   .sidebar {
@@ -3308,12 +3295,6 @@ tr:hover td {
   }
   .welcome-row h1 {
     font-size: 23px;
-  }
-  .welcome-row p {
-    font-size: 10px;
-  }
-  .welcome-row .eyebrow {
-    font-size: 7px;
   }
   .today-label {
     font-size: 8px;
@@ -3782,9 +3763,6 @@ tr:hover td {
   .welcome-row h1 {
     font-size: 21px;
   }
-  .welcome-row p {
-    font-size: 9px;
-  }
   .today-label {
     display: none;
   }
@@ -4152,17 +4130,6 @@ tr:hover td {
   .welcome-row h1 {
     font-size: 22px;
     letter-spacing: -0.65px;
-  }
-  .welcome-row p {
-    font-size: 10px;
-    line-height: 1.9;
-    margin-top: 7px;
-    max-width: 330px;
-  }
-  .welcome-row .eyebrow {
-    font-size: 6px;
-    letter-spacing: 1.5px;
-    margin-bottom: 10px;
   }
   .greeting-star {
     font-size: 17px;
@@ -5267,12 +5234,6 @@ tr:hover td {
     font-size: 24px;
     max-width: 310px;
   }
-  .welcome-row p {
-    font-size: 11px;
-  }
-  .welcome-row .eyebrow {
-    font-size: 7px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   * {
@@ -5423,13 +5384,13 @@ tr:hover td {
   .student-lookup .button { width: 100%; }
 }
 
-/* Keep mobile copy readable even where compact layouts set smaller desktop type. */
-@media screen and (max-width: 800px) {
+/* Shared reading sizes for the app on desktop and mobile. */
+@media screen {
   :root {
-    --mobile-copy: 1rem;
-    --mobile-meta: 0.875rem;
-    --mobile-caption: 0.8125rem;
-    --mobile-muted: #526053;
+    --copy-size: 1rem;
+    --metadata-size: 0.875rem;
+    --caption-size: 0.8125rem;
+    --readable-muted: #526053;
   }
 
   body { min-width: 0; }
@@ -5437,7 +5398,6 @@ tr:hover td {
   .detail-main h1,
   .welcome-row h1 { font-size: clamp(1.75rem, 6vw, 2.25rem); line-height: 1.25; }
   .page-title p,
-  .welcome-row p,
   .hero-text p,
   .section-heading p,
   .detail-section > p,
@@ -5448,12 +5408,12 @@ tr:hover td {
   .empty-state p,
   .auth-form-wrap > p,
   .prose p {
-    font-size: var(--mobile-copy);
+    font-size: var(--copy-size);
     line-height: 1.6;
   }
   .page-title p,
-  .welcome-row p,
   .section-heading p,
+  .today-label,
   .organization-event-meta,
   .detail-section > p,
   .organization-card > p,
@@ -5469,7 +5429,7 @@ tr:hover td {
   .registration-item-content p,
   .event-meta,
   .small-copy,
-  .muted { color: var(--mobile-muted); }
+  .muted { color: var(--readable-muted); }
 
   .organization-card h2,
   .detail-section h2,
@@ -5486,9 +5446,6 @@ tr:hover td {
   .event-title,
   .event-card-list .event-title { font-size: 1.125rem; line-height: 1.4; }
 
-  .section-heading,
-  .organization-card-actions { row-gap: 10px; }
-  .section-heading { flex-wrap: wrap; }
   .event-title,
   .event-card-list .event-title { min-height: 0; }
   .event-meta { flex-wrap: wrap; }
@@ -5529,14 +5486,13 @@ tr:hover td {
   .success-message,
   th,
   td {
-    font-size: var(--mobile-meta);
+    font-size: var(--metadata-size);
     line-height: 1.5;
   }
   .eyebrow,
   .page-title .eyebrow,
   .detail-main .eyebrow,
   .announcement-topline .eyebrow,
-  .welcome-row .eyebrow,
   .registration-item-content .eyebrow,
   .hero-kicker,
   .hero-community > span,
@@ -5549,6 +5505,7 @@ tr:hover td {
   .waitlist-badge,
   .neutral-badge,
   .breadcrumb,
+  .today-label,
   .demo-pill,
   .sidebar .workspace-label,
   .sidebar .nav-section-label,
@@ -5560,7 +5517,7 @@ tr:hover td {
   .fc .fc-daygrid-day-number,
   .fc .fc-col-header-cell-cushion,
   .fc .fc-timegrid-slot-label {
-    font-size: var(--mobile-caption);
+    font-size: var(--caption-size);
     line-height: 1.4;
   }
   .event-org,
@@ -5568,7 +5525,7 @@ tr:hover td {
   .results-label,
   .discovery-stats small,
   .capacity-line,
-  .free-tag span { color: var(--mobile-muted); }
+  .free-tag span { color: var(--readable-muted); }
   .sidebar .nav-item,
   .sidebar .organization-link,
   .field > span:first-child,
@@ -5579,7 +5536,7 @@ tr:hover td {
   .free-tag,
   .registration-success,
   .event-facts dd,
-  .form-confirmation { font-size: var(--mobile-copy); line-height: 1.45; }
+  .form-confirmation { font-size: var(--copy-size); line-height: 1.45; }
 
   .button,
   .button.small-button,
@@ -5590,19 +5547,13 @@ tr:hover td {
   .category-tabs button,
   .page-tabs button {
     min-height: 44px;
-    font-size: var(--mobile-copy);
+    font-size: var(--copy-size);
     line-height: 1.4;
   }
   .button,
   .hero-button { max-width: 100%; white-space: normal; }
   .page-tabs { gap: 4px 16px; flex-wrap: wrap; }
   .sidebar .nav-item { height: auto; min-height: 46px; padding-block: 8px; }
-  .topbar .notification-button,
-  .topbar .mobile-menu,
-  .topbar .header-profile { min-height: 44px; min-width: 44px; }
-  .topbar .breadcrumb { min-width: 0; }
-  .topbar .breadcrumb > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
   .search-box { min-height: 44px; }
   .hero-text p,
   .hero-community > span { color: #f1f5ec; }
@@ -5614,19 +5565,49 @@ tr:hover td {
   .filter-panel input,
   .filter-panel select,
   .event-selector select,
-  .report-filter select { font-size: var(--mobile-copy); }
-  input[type="file"] { font-size: var(--mobile-meta); }
+  .report-filter select { font-size: var(--copy-size); }
+  input[type="file"] { font-size: var(--metadata-size); }
   .fc .fc-daygrid-event .fc-event-title {
     min-width: 0;
-    font-size: var(--mobile-caption);
-    color: var(--mobile-muted);
+    font-size: var(--caption-size);
+    color: var(--readable-muted);
     line-height: 1.35;
+  }
+  .fc .fc-col-header-cell-cushion,
+  .fc .fc-daygrid-day-number { color: var(--readable-muted); }
+}
+
+@media screen and (width > 800px) {
+  :root {
+    --body-font: system-ui, "Segoe UI", sans-serif;
+    --heading-font: var(--body-font);
+  }
+  .page-title h1,
+  .detail-main h1,
+  .welcome-row h1 { font-size: clamp(1.875rem, 2.4vw, 2.5rem); }
+  .site-footer,
+  .rail-heading,
+  .mini-day-name,
+  .calendar-key,
+  .calendar-full-link { font-size: var(--caption-size); }
+  .up-next-event h4 { font-size: var(--metadata-size); }
+  .up-next-event p { font-size: var(--caption-size); }
+}
+
+@media screen and (max-width: 800px) {
+  .section-heading,
+  .organization-card-actions { row-gap: 10px; }
+  .section-heading { flex-wrap: wrap; }
+  .topbar .notification-button,
+  .topbar .mobile-menu,
+  .topbar .header-profile { min-height: 44px; min-width: 44px; }
+  .topbar .breadcrumb { min-width: 0; }
+  .topbar .breadcrumb > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fc .fc-daygrid-event .fc-event-title {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .fc .fc-col-header-cell-cushion,
-  .fc .fc-daygrid-day-number { color: var(--mobile-muted); }
 }
 
 @media screen and (max-width: 480px) {
