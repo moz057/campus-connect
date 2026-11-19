@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { isAuthApiError } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import type { Profile, Role } from "../lib/types";
 import { useToast } from "./ToastContext";
@@ -111,6 +112,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: window.location.origin + "/auth/callback",
       },
     });
+    const duplicateError =
+      isAuthApiError(error) &&
+      (error.code === "user_already_exists" || error.code === "email_exists");
+    // Supabase can return a masked user with no identities for a duplicate signup.
+    if (duplicateError || (!error && data.user?.identities?.length === 0)) {
+      throw Error("An account already exists for this email. Log in instead.");
+    }
     if (error) throw error;
     return Boolean(data.session);
   }
