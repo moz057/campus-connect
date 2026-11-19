@@ -5422,3 +5422,222 @@ tr:hover td {
   .workflow-toolbar .button,
   .student-lookup .button { width: 100%; }
 }
+
+/* Keep mobile copy readable even where compact layouts set smaller desktop type. */
+@media screen and (max-width: 800px) {
+  :root {
+    --mobile-copy: 1rem;
+    --mobile-meta: 0.875rem;
+    --mobile-caption: 0.8125rem;
+    --mobile-muted: #526053;
+  }
+
+  body { min-width: 0; }
+  .page-title h1,
+  .detail-main h1,
+  .welcome-row h1 { font-size: clamp(1.75rem, 6vw, 2.25rem); line-height: 1.25; }
+  .page-title p,
+  .welcome-row p,
+  .hero-text p,
+  .section-heading p,
+  .detail-section > p,
+  .organization-card > p,
+  .organization-event p,
+  .announcement p,
+  .announcement-card p,
+  .empty-state p,
+  .auth-form-wrap > p,
+  .prose p {
+    font-size: var(--mobile-copy);
+    line-height: 1.6;
+  }
+  .page-title p,
+  .welcome-row p,
+  .section-heading p,
+  .organization-event-meta,
+  .detail-section > p,
+  .organization-card > p,
+  .organization-event p,
+  .announcement-card p,
+  .announcement-topline time,
+  .auth-form-wrap > p,
+  .calendar-timezone,
+  .form-footer > span,
+  .field > small,
+  .registration-deadline,
+  .registration-note,
+  .registration-item-content p,
+  .event-meta,
+  .small-copy,
+  .muted { color: var(--mobile-muted); }
+
+  .organization-card h2,
+  .detail-section h2,
+  .section-heading h2,
+  .registration-panel h2,
+  .form-step h2,
+  .form-section-title h2 { font-size: 1.25rem; line-height: 1.35; }
+  .organization-card h3,
+  .registration-item-content h2,
+  .announcement h2,
+  .announcement h3,
+  .announcement-card h2,
+  .demo-roles strong,
+  .event-title,
+  .event-card-list .event-title { font-size: 1.125rem; line-height: 1.4; }
+
+  .section-heading,
+  .organization-card-actions { row-gap: 10px; }
+  .section-heading { flex-wrap: wrap; }
+  .event-title,
+  .event-card-list .event-title { min-height: 0; }
+  .event-meta { flex-wrap: wrap; }
+  .event-meta span,
+  .organization-event-meta span { min-width: 0; overflow-wrap: anywhere; }
+  .event-meta svg,
+  .organization-event-meta svg,
+  .button svg { flex-shrink: 0; }
+
+  .back-link,
+  .text-link,
+  .section-heading .text-link,
+  .event-meta,
+  .event-card-list .event-meta,
+  .event-cta,
+  .event-card-list .event-cta,
+  .slots,
+  .slots span,
+  .event-card-list .slots,
+  .event-card-list .slots span,
+  .organization-event-meta,
+  .registration-deadline,
+  .registration-note,
+  .registration-item-content p,
+  .event-facts dt,
+  .form-step p,
+  .form-section-title p,
+  .form-footer > span,
+  .field > small,
+  .calendar-timezone,
+  .announcement-topline time,
+  .demo-roles button > span,
+  .small-copy,
+  .auth-switch,
+  .auth-footnote,
+  .toast,
+  .error-message,
+  .success-message,
+  th,
+  td {
+    font-size: var(--mobile-meta);
+    line-height: 1.5;
+  }
+  .eyebrow,
+  .page-title .eyebrow,
+  .detail-main .eyebrow,
+  .announcement-topline .eyebrow,
+  .welcome-row .eyebrow,
+  .registration-item-content .eyebrow,
+  .hero-kicker,
+  .hero-community > span,
+  .category-badge,
+  .detail-banner .category-badge,
+  .registered-overlay,
+  .event-org,
+  .event-card-list .event-org,
+  .success-badge,
+  .waitlist-badge,
+  .neutral-badge,
+  .breadcrumb,
+  .demo-pill,
+  .sidebar .workspace-label,
+  .sidebar .nav-section-label,
+  .discovery-stats small,
+  .results-label,
+  .end-note,
+  .count-tag,
+  .free-tag span,
+  .fc .fc-daygrid-day-number,
+  .fc .fc-col-header-cell-cushion,
+  .fc .fc-timegrid-slot-label {
+    font-size: var(--mobile-caption);
+    line-height: 1.4;
+  }
+  .event-org,
+  .event-card-list .event-org,
+  .results-label,
+  .discovery-stats small,
+  .capacity-line,
+  .free-tag span { color: var(--mobile-muted); }
+  .sidebar .nav-item,
+  .sidebar .organization-link,
+  .field > span:first-child,
+  .filter-panel label,
+  .event-selector label,
+  .report-filter label,
+  .capacity-line,
+  .free-tag,
+  .registration-success,
+  .event-facts dd,
+  .form-confirmation { font-size: var(--mobile-copy); line-height: 1.45; }
+
+  .button,
+  .button.small-button,
+  .registration-panel .button,
+  .registration-item-action .button,
+  .hero-button,
+  .filter-button,
+  .category-tabs button,
+  .page-tabs button {
+    min-height: 44px;
+    font-size: var(--mobile-copy);
+    line-height: 1.4;
+  }
+  .button,
+  .hero-button { max-width: 100%; white-space: normal; }
+  .page-tabs { gap: 4px 16px; flex-wrap: wrap; }
+  .sidebar .nav-item { height: auto; min-height: 46px; padding-block: 8px; }
+  .topbar .notification-button,
+  .topbar .mobile-menu,
+  .topbar .header-profile { min-height: 44px; min-width: 44px; }
+  .topbar .breadcrumb { min-width: 0; }
+  .topbar .breadcrumb > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .search-box { min-height: 44px; }
+  .hero-text p,
+  .hero-community > span { color: #f1f5ec; }
+  input:not([type="checkbox"], [type="radio"], [type="file"]),
+  select,
+  textarea,
+  .search-box input,
+  .global-search input,
+  .filter-panel input,
+  .filter-panel select,
+  .event-selector select,
+  .report-filter select { font-size: var(--mobile-copy); }
+  input[type="file"] { font-size: var(--mobile-meta); }
+  .fc .fc-daygrid-event .fc-event-title {
+    min-width: 0;
+    font-size: var(--mobile-caption);
+    color: var(--mobile-muted);
+    line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .fc .fc-col-header-cell-cushion,
+  .fc .fc-daygrid-day-number { color: var(--mobile-muted); }
+}
+
+@media screen and (max-width: 480px) {
+  .organization-card-actions { width: 100%; }
+  .demo-roles { grid-template-columns: minmax(0, 1fr); }
+  .event-grid,
+  .event-grid.compact-grid { grid-template-columns: minmax(0, 1fr); }
+  .discovery-stats > div { padding-inline: 8px; min-width: 0; }
+  .event-search-row { flex-wrap: wrap; }
+  .event-search-row .search-box { flex: 1 1 100%; }
+  .event-search-row .view-toggle { margin-left: auto; }
+  .topbar { gap: 6px; }
+  .topbar-actions { gap: 6px; }
+}
